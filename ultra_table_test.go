@@ -154,6 +154,46 @@ func Test_Remove(t *testing.T) {
 		}
 		Convey("Remove-1", func() {
 			ultraTable := NewUltraTable()
+			ultraTable.Add(Order{
+				ID:        `1`,
+				Account:   "1001",
+				StockCode: "700",
+				Currency:  "HKD",
+				Amount:    100,
+			})
+			ultraTable.Add(Order{
+				ID:        `1`,
+				Account:   "1001",
+				StockCode: "9988",
+				Currency:  "HKD",
+				Amount:    100,
+			})
+			So(ultraTable.RemoveWithIdx(`id`, `1`), ShouldEqual, 2)
+			So(ultraTable.RemoveWithIdx(`id`, `1`), ShouldEqual, 0)
+			So(ultraTable.RemoveWithIdx(`account`, `1001`), ShouldEqual, 0)
+			So(ultraTable.RemoveWithIdx(`stock_code`, `700`), ShouldEqual, 0)
+
+			ultraTable.Add(Order{
+				ID:        `2`,
+				Account:   "1001",
+				StockCode: "700",
+				Currency:  "HKD",
+				Amount:    100,
+			})
+
+			ultraTable.Add(Order{
+				ID:        `3`,
+				Account:   "1001",
+				StockCode: "700",
+				Currency:  "HKD",
+				Amount:    100,
+			})
+			So(ultraTable.RemoveWithIdx(`account`, `1001`), ShouldEqual, 2)
+			So(ultraTable.RemoveWithIdx(`stock_code`, `700`), ShouldEqual, 0)
+		})
+
+		Convey("Remove-2", func() {
+			ultraTable := NewUltraTable()
 			for i := 0; i < 1000; i++ {
 				ultraTable.Add(Order{
 					ID:        fmt.Sprint(i),
@@ -205,7 +245,7 @@ func Test_Remove(t *testing.T) {
 			items = ultraTable.GetAll()
 			So(len(items), ShouldEqual, 0)
 		})
-		Convey("Remove-2", func() {
+		Convey("Remove-3", func() {
 			ultraTable := NewUltraTable()
 
 			for i := 0; i < 500; i++ {

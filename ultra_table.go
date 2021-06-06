@@ -12,7 +12,7 @@ var (
 )
 
 type uIndex struct {
-	uIndexList map[string]map[interface{}][]uint64
+	uIndexList map[string]map[interface{}]map[uint64]uint8
 }
 
 type ItemIterator func(interface{}) bool
@@ -27,7 +27,7 @@ type UltraTable struct {
 func NewUltraTable() *UltraTable {
 	return &UltraTable{
 		internalSlice: make([]interface{}, 0),
-		uIndex:        uIndex{uIndexList: map[string]map[interface{}][]uint64{}},
+		uIndex:        uIndex{uIndexList: map[string]map[interface{}]map[uint64]uint8{}},
 		emptyMap:      map[uint64]uint8{},
 	}
 }
@@ -72,7 +72,6 @@ func (u *UltraTable) Remove(iterator ItemIterator) uint64 {
 func (u *UltraTable) RemoveWithIdx(idxKey string, vKey interface{}) uint64 {
 	u.mu.RLock()
 	defer u.mu.RUnlock()
-
 	index, ok := u.uIndex.uIndexList[idxKey]
 	if !ok {
 		return 0
@@ -81,16 +80,14 @@ func (u *UltraTable) RemoveWithIdx(idxKey string, vKey interface{}) uint64 {
 	if !ok {
 		return 0
 	}
-	if len(index[vKey]) > 0 {
-		count := len(index[vKey])
-		for i := 0; i < len(index[vKey]); i++ {
-			u.internalSlice[index[vKey][i]] = nil
-			u.emptyMap[index[vKey][i]] = 0
-		}
-		index[vKey] = index[vKey][0:0]
-		return uint64(count)
+	count := uint64(0)
+	for k := range index[vKey] {
+		u.removeIndex(k, u.internalSlice[k])
+		u.internalSlice[k] = nil
+		u.emptyMap[k] = 0
+		count++
 	}
-	return 0
+	return count
 }
 
 //Get benchmark performance near O(1)
@@ -106,8 +103,8 @@ func (u *UltraTable) GetWithIdx(idxKey string, vKey interface{}) ([]interface{},
 		return nil, RecordNotFound
 	}
 	var result []interface{}
-	for _, v := range sliceList {
-		result = append(result, u.internalSlice[v])
+	for k := range sliceList {
+		result = append(result, u.internalSlice[k])
 	}
 	return result, nil
 }
@@ -146,7 +143,7 @@ func (u *UltraTable) Clear() {
 	u.mu.Lock()
 	defer u.mu.Unlock()
 	u.internalSlice = make([]interface{}, 0)
-	u.uIndex = uIndex{uIndexList: map[string]map[interface{}][]uint64{}}
+	u.uIndex = uIndex{uIndexList: map[string]map[interface{}]map[uint64]uint8{}}
 	u.emptyMap = make(map[uint64]uint8, 0)
 }
 
@@ -196,12 +193,14 @@ func (u *UltraTable) removeIndex(idx uint64, dest interface{}) {
 		}
 		m, ok := u.uIndex.uIndexList[tag]
 		if ok {
-			for j := 0; j < len(m[value.Field(i).Interface()]); j++ {
-				if m[value.Field(i).Interface()][j] == idx {
-					m[value.Field(i).Interface()] = append(m[value.Field(i).Interface()][:j], m[value.Field(i).Interface()][j+1:]...)
-					continue
-				}
-			}
+			delete(m[value.Field(i).Interface()], idx)
+			//for j := 0; j < len(m[value.Field(i).Interface()]); j++ {
+
+			// if m[value.Field(i).Interface()][j] == idx {
+			// 	m[value.Field(i).Interface()] = append(m[value.Field(i).Interface()][:j], m[value.Field(i).Interface()][j+1:]...)
+			// 	continue
+			// }
+			//}
 		}
 	}
 }
@@ -218,10 +217,14 @@ func (u *UltraTable) addIndex(dest interface{}, idx uint64) {
 		}
 		m, ok := u.uIndex.uIndexList[tag]
 		if !ok {
-			u.uIndex.uIndexList[tag] = make(map[interface{}][]uint64)
-			u.uIndex.uIndexList[tag][value.Field(i).Interface()] = []uint64{idx}
+			u.uIndex.uIndexList[tag] = make(map[interface{}]map[uint64]uint8)
+			u.uIndex.uIndexList[tag][value.Field(i).Interface()] = map[uint64]uint8{idx: 0}
 		} else {
-			m[value.Field(i).Interface()] = append(m[value.Field(i).Interface()], idx)
+			if m[value.Field(i).Interface()] == nil {
+				m[value.Field(i).Interface()] = map[uint64]uint8{idx: 0}
+			} else {
+				m[value.Field(i).Interface()][idx] = 0
+			}
 		}
 	}
 }

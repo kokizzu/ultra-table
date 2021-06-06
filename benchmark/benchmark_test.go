@@ -1,13 +1,12 @@
 package benchmark
 
 import (
-	"fmt"
 	"testing"
 	"ultra_table"
 )
 
 type Order struct {
-	ID        string `index:"id"`
+	ID        int    `index:"id"`
 	Account   string `index:"account"`
 	StockCode string `index:"stock_code"`
 	Currency  string
@@ -23,7 +22,7 @@ func BenchmarkAddHasIndex(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		ultraTable.Add(Order{
-			ID:        fmt.Sprint(i),
+			ID:        i,
 			Account:   "1001",
 			StockCode: "00001",
 			Currency:  "HKD",
@@ -35,7 +34,7 @@ func BenchmarkAddHasIndex(b *testing.B) {
 func BenchmarkAdd(b *testing.B) {
 	b.StopTimer()
 	type Order struct {
-		ID        string
+		ID        int
 		Account   string
 		StockCode string
 		Currency  string
@@ -47,7 +46,7 @@ func BenchmarkAdd(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		ultraTable.Add(Order{
-			ID:        fmt.Sprint(i),
+			ID:        i,
 			Account:   "1001",
 			StockCode: "00001",
 			Currency:  "HKD",
@@ -61,7 +60,7 @@ func perm() *ultra_table.UltraTable {
 
 	for i := 0; i < 100000; i++ {
 		ultraTable.Add(Order{
-			ID:        fmt.Sprint(i),
+			ID:        i,
 			Account:   "1001",
 			StockCode: "00001",
 			Currency:  "HKD",
@@ -78,7 +77,7 @@ func BenchmarkGet(b *testing.B) {
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		ultraTable.Get(func(i interface{}) bool {
-			return i.(Order).ID == fmt.Sprint(i)
+			return i.(Order).ID == i
 		})
 	}
 }
@@ -89,7 +88,7 @@ func BenchmarkGetWithIndex(b *testing.B) {
 	ultraTable := perm()
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		ultraTable.GetWithIdx("id", fmt.Sprint(i))
+		ultraTable.GetWithIdx("id", i)
 	}
 }
 
@@ -99,7 +98,7 @@ func BenchmarkRemove(b *testing.B) {
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		ultraTable.Remove(func(i interface{}) bool {
-			return i.(Order).ID == fmt.Sprint(i)
+			return i.(Order).ID == i
 		})
 	}
 
@@ -111,21 +110,40 @@ func BenchmarkRemoveWithIndex(b *testing.B) {
 	ultraTable := perm()
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		ultraTable.RemoveWithIdx("id", fmt.Sprint(i))
+		ultraTable.RemoveWithIdx("id", i)
+	}
+}
+
+func BenchmarkAddRemove(b *testing.B) {
+	b.StopTimer()
+	ultraTable := perm()
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		ultraTable.Add(Order{
+			ID:        i,
+			Account:   "1001",
+			StockCode: "00001",
+			Currency:  "HKD",
+			Amount:    float64(i),
+		})
+		ultraTable.RemoveWithIdx("id", i)
 	}
 }
 
 // goos: darwin
 // goarch: amd64
 // BenchmarkAddHasIndex
-// BenchmarkAddHasIndex-12           969079              1615 ns/op             535 B/op          9 allocs/op
+// BenchmarkAddHasIndex-12           905406              1957 ns/op             603 B/op          8 allocs/op
 // BenchmarkAdd
-// BenchmarkAdd-12                  2730561               439 ns/op             235 B/op          7 allocs/op
+// BenchmarkAdd-12                  3691093               323 ns/op             195 B/op          6 allocs/op
 // BenchmarkGet
-// BenchmarkGet-12                       24          46857622 ns/op         3200236 B/op     100001 allocs/op
+// BenchmarkGet-12                     1904            630317 ns/op               0 B/op          0 allocs/op
 // BenchmarkGetWithIndex
-// BenchmarkGetWithIndex-12         7500440               152 ns/op              16 B/op          2 allocs/op
+// BenchmarkGetWithIndex-12        13605790                92.0 ns/op             0 B/op          0 allocs/op
 // BenchmarkRemove
-// BenchmarkRemove-12                    24          47166444 ns/op         3200223 B/op     100000 allocs/op
+// BenchmarkRemove-12                  1972            666773 ns/op               0 B/op          0 allocs/op
 // BenchmarkRemoveWithIndex
-// BenchmarkRemoveWithIndex-12      5563045               186 ns/op              32 B/op          3 allocs/op
+// BenchmarkRemoveWithIndex-12     17592115                62.7 ns/op             0 B/op          0 allocs/op
+// BenchmarkAddRemove
+// BenchmarkAddRemove-12             460332              2305 ns/op             454 B/op         15 allocs/op
+// PASS
