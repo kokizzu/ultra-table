@@ -317,3 +317,88 @@ func Test_Remove(t *testing.T) {
 		})
 	})
 }
+
+func Test_Update(t *testing.T) {
+	Convey("Update", t, func() {
+		type Order struct {
+			ID        string `index:"id"`
+			Account   string `index:"account"`
+			StockCode string `index:"stock_code"`
+			Currency  string
+			Amount    float64
+		}
+		ultraTable := NewUltraTable()
+		ultraTable.Add(Order{
+			ID:        `order_1`,
+			Account:   "1001",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    500.1,
+		})
+
+		orders, err := ultraTable.GetWithIdx("id", "order_1")
+		So(err, ShouldBeNil)
+		So(orders[0].(Order).Amount, ShouldEqual, 500.1)
+
+		count := ultraTable.UpdateWithIdx("id", "order_1", Order{
+			ID:        `order_1`,
+			Account:   "1001",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    500.2,
+		})
+		So(count, ShouldEqual, 1)
+
+		orders, err = ultraTable.GetWithIdx("id", "order_1")
+		So(err, ShouldBeNil)
+		So(orders[0].(Order).Amount, ShouldEqual, 500.2)
+
+		ultraTable.Add(Order{
+			ID:        `order_2`,
+			Account:   "1001",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    500.1,
+		})
+		ultraTable.Add(Order{
+			ID:        `order_2`,
+			Account:   "1001",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    500.1,
+		})
+		ultraTable.Add(Order{
+			ID:        `order_2`,
+			Account:   "1001",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    500.1,
+		})
+
+		count = ultraTable.UpdateWithIdx("id", "order_2", Order{
+			ID:        `order_3`,
+			Account:   "1001",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    500.2,
+		})
+		So(count, ShouldEqual, 3)
+
+		orders, err = ultraTable.GetWithIdx("id", "order_3")
+		So(err, ShouldBeNil)
+		So(len(orders), ShouldEqual, 3)
+		So(orders[0].(Order).Amount, ShouldEqual, 500.2)
+		So(orders[1].(Order).Amount, ShouldEqual, 500.2)
+		So(orders[2].(Order).Amount, ShouldEqual, 500.2)
+
+		count = ultraTable.UpdateWithIdx("stock_code", "700", Order{
+			ID:        `order_3`,
+			Account:   "1001",
+			StockCode: "800",
+			Currency:  "HKD",
+			Amount:    500.2,
+		})
+		So(count, ShouldEqual, 4)
+
+	})
+}

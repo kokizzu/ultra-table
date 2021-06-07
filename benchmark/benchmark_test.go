@@ -130,20 +130,35 @@ func BenchmarkAddRemove(b *testing.B) {
 	}
 }
 
-// goos: darwin
-// goarch: amd64
+func BenchmarkUpdateWithIdx(b *testing.B) {
+	b.StopTimer()
+	ultraTable := perm()
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		ultraTable.UpdateWithIdx("id", i, Order{
+			ID:        i + 1000000,
+			Account:   "1002",
+			StockCode: "00002",
+			Currency:  "USD",
+			Amount:    float64(i),
+		})
+	}
+}
+
 // BenchmarkAddHasIndex
-// BenchmarkAddHasIndex-12           905406              1957 ns/op             603 B/op          8 allocs/op
+// BenchmarkAddHasIndex-12           840850              1787 ns/op             481 B/op          8 allocs/op
 // BenchmarkAdd
-// BenchmarkAdd-12                  3691093               323 ns/op             195 B/op          6 allocs/op
+// BenchmarkAdd-12                  3619507               345 ns/op             197 B/op          6 allocs/op
 // BenchmarkGet
-// BenchmarkGet-12                     1904            630317 ns/op               0 B/op          0 allocs/op
+// BenchmarkGet-12                     1663            765931 ns/op               0 B/op          0 allocs/op
 // BenchmarkGetWithIndex
-// BenchmarkGetWithIndex-12        13605790                92.0 ns/op             0 B/op          0 allocs/op
+// BenchmarkGetWithIndex-12        18395773                80.6 ns/op             0 B/op          0 allocs/op
 // BenchmarkRemove
-// BenchmarkRemove-12                  1972            666773 ns/op               0 B/op          0 allocs/op
+// BenchmarkRemove-12                  1910            557853 ns/op               0 B/op          0 allocs/op
 // BenchmarkRemoveWithIndex
-// BenchmarkRemoveWithIndex-12     17592115                62.7 ns/op             0 B/op          0 allocs/op
+// BenchmarkRemoveWithIndex-12     17457786                63.3 ns/op             0 B/op          0 allocs/op
 // BenchmarkAddRemove
-// BenchmarkAddRemove-12             460332              2305 ns/op             454 B/op         15 allocs/op
+// BenchmarkAddRemove-12             464210              2489 ns/op             453 B/op         15 allocs/op
+// BenchmarkUpdateWithIdx
+// BenchmarkUpdateWithIdx-12        2600654               411 ns/op             109 B/op          2 allocs/op
 // PASS

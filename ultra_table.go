@@ -90,6 +90,35 @@ func (u *UltraTable) RemoveWithIdx(idxKey string, vKey interface{}) uint64 {
 	return count
 }
 
+func (u *UltraTable) UpdateWithIdx(idxKey string, vKey interface{}, newDest interface{}) uint64 {
+	u.mu.RLock()
+	defer u.mu.RUnlock()
+	index, ok := u.uIndex.uIndexList[idxKey]
+	if !ok {
+		return 0
+	}
+	_, ok = index[vKey]
+	if !ok {
+		return 0
+	}
+	count := 0
+	for k := range index[vKey] {
+		u.removeIndex(k, u.internalSlice[k])
+		u.internalSlice[k] = nil
+		u.emptyMap[k] = 0
+		count++
+	}
+	for i := 0; i <= count-1; i++ {
+		for j := range u.emptyMap {
+			u.internalSlice[j] = newDest
+			u.addIndex(newDest, j)
+			delete(u.emptyMap, j)
+			break
+		}
+	}
+	return uint64(count)
+}
+
 //Get benchmark performance near O(1)
 func (u *UltraTable) GetWithIdx(idxKey string, vKey interface{}) ([]interface{}, error) {
 	u.mu.RLock()
@@ -194,13 +223,6 @@ func (u *UltraTable) removeIndex(idx uint64, dest interface{}) {
 		m, ok := u.uIndex.uIndexList[tag]
 		if ok {
 			delete(m[value.Field(i).Interface()], idx)
-			//for j := 0; j < len(m[value.Field(i).Interface()]); j++ {
-
-			// if m[value.Field(i).Interface()][j] == idx {
-			// 	m[value.Field(i).Interface()] = append(m[value.Field(i).Interface()][:j], m[value.Field(i).Interface()][j+1:]...)
-			// 	continue
-			// }
-			//}
 		}
 	}
 }
