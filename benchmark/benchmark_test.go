@@ -2,7 +2,8 @@ package benchmark
 
 import (
 	"testing"
-	ultra_table "ultra-table"
+
+	ultra_table "github.com/longbridgeapp/ultra-table"
 )
 
 type Order struct {
