@@ -1,4 +1,4 @@
-module ultra-table
+module github.com/longbridgeapp/ultra-table
 
 go 1.15
 

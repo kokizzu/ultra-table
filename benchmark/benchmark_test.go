@@ -2,7 +2,7 @@ package benchmark
 
 import (
 	"testing"
-	"ultra_table"
+	ultra_table "ultra-table"
 )
 
 type Order struct {
