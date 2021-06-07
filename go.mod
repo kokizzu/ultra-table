@@ -1,4 +1,4 @@
-module ultra_table
+module ultra-table
 
 go 1.15
 
