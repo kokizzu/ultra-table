@@ -112,6 +112,90 @@ func TestUslice(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(len(results), ShouldEqual, 0)
 		})
+		Convey("Have Index GetWithIdxIntersection", func() {
+			type Order struct {
+				ID        string `index:"id"`
+				Account   string `index:"account"`
+				StockCode string `index:"stock_code"`
+				Currency  string `index:"currency"`
+				Amount    float64
+			}
+
+			Uslice := NewUltraTable()
+			Uslice.Add(Order{
+				ID:        "order_1",
+				Account:   "1001",
+				StockCode: "700",
+				Currency:  "HKD",
+				Amount:    55000,
+			})
+			Uslice.Add(Order{
+				ID:        "order_1",
+				Account:   "1001",
+				StockCode: "800",
+				Currency:  "HKD",
+				Amount:    55000,
+			})
+			Uslice.Add(Order{
+				ID:        "order_1",
+				Account:   "1001",
+				StockCode: "800",
+				Currency:  "HKD",
+				Amount:    55000,
+			})
+			Uslice.Add(Order{
+				ID:        "order_1",
+				Account:   "1002",
+				StockCode: "800",
+				Currency:  "HKD",
+				Amount:    55000,
+			})
+			Uslice.Add(Order{
+				ID:        "order_1",
+				Account:   "1002",
+				StockCode: "800",
+				Currency:  "USD",
+				Amount:    55000,
+			})
+
+			list, err := Uslice.GetWithIdxIntersection(map[string]interface{}{
+				"account":    "1001",
+				"stock_code": "700",
+			})
+			So(err, ShouldBeNil)
+			So(len(list), ShouldEqual, 1)
+
+			list, err = Uslice.GetWithIdxIntersection(map[string]interface{}{
+				"account":    "1001",
+				"stock_code": "800",
+			})
+			So(err, ShouldBeNil)
+			So(len(list), ShouldEqual, 2)
+
+			list, err = Uslice.GetWithIdxIntersection(map[string]interface{}{
+				"account":    "1001",
+				"stock_code": "800",
+				"currency":   "SGD",
+			})
+			So(err, ShouldNotBeNil)
+			So(len(list), ShouldEqual, 0)
+
+			list, err = Uslice.GetWithIdxIntersection(map[string]interface{}{
+				"account":    "1001",
+				"stock_code": "800",
+				"currency":   "USD",
+			})
+			So(err, ShouldBeNil)
+			So(len(list), ShouldEqual, 0)
+
+			list, err = Uslice.GetWithIdxIntersection(map[string]interface{}{
+				"account":    "1002",
+				"stock_code": "800",
+				"currency":   "USD",
+			})
+			So(err, ShouldBeNil)
+			So(len(list), ShouldEqual, 1)
+		})
 	})
 
 }

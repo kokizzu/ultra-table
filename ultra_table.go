@@ -138,6 +138,64 @@ func (u *UltraTable) GetWithIdx(idxKey string, vKey interface{}) ([]interface{},
 	return result, nil
 }
 
+//GetWithIdxIntersection like where a=? and b=?
+func (u *UltraTable) GetWithIdxIntersection(conditions map[string]interface{}) ([]interface{}, error) {
+	u.mu.RLock()
+	defer u.mu.RUnlock()
+
+	intersectionList := []map[uint64]uint8{}
+
+	minLen := 0
+	minLenIndex := 0
+
+	for idxKey, vKey := range conditions {
+		index, ok := u.uIndex.uIndexList[idxKey]
+		if !ok {
+			return nil, RecordNotFound
+		}
+		sliceList, ok := index[vKey]
+		if !ok {
+			return nil, RecordNotFound
+		}
+		intersectionList = append(intersectionList, sliceList)
+		if len(intersectionList) > 1 {
+			if len(sliceList) < minLen {
+				minLenIndex = len(intersectionList) - 1
+				minLen = len(sliceList)
+			}
+		} else {
+			minLen = len(sliceList)
+			minLenIndex = 0
+		}
+	}
+
+	if len(intersectionList) == 0 {
+		return nil, RecordNotFound
+	}
+
+	var result []interface{}
+	tempMap := map[uint64]uint64{}
+
+	for k := range intersectionList[minLenIndex] {
+		tempMap[k] = 1
+		for i := 0; i < len(intersectionList); i++ {
+			if i == minLenIndex {
+				continue
+			}
+			if _, ok := intersectionList[i][k]; ok {
+				tempMap[k] = tempMap[k] + 1
+			}
+		}
+	}
+
+	for k, v := range tempMap {
+		if v == uint64(len(intersectionList)) {
+			result = append(result, u.internalSlice[k])
+		}
+	}
+	return result, nil
+}
+
 //Get benchmark performance near O(n), it is recommended to use GetWithIdx
 func (u *UltraTable) Get(iterator ItemIterator) []interface{} {
 	u.mu.RLock()

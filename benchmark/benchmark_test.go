@@ -146,20 +146,35 @@ func BenchmarkUpdateWithIdx(b *testing.B) {
 	}
 }
 
+func BenchmarkGetWithIdxIntersection(b *testing.B) {
+	b.StopTimer()
+	ultraTable := perm()
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		ultraTable.GetWithIdxIntersection(map[string]interface{}{
+			"id":         i,
+			"account":    "1001",
+			"stock_code": "00001",
+		})
+	}
+}
+
+// goarch: amd64
 // BenchmarkAddHasIndex
-// BenchmarkAddHasIndex-12           840850              1787 ns/op             481 B/op          8 allocs/op
+// BenchmarkAddHasIndex-12                   865812              1770 ns/op             599 B/op          8 allocs/op
 // BenchmarkAdd
-// BenchmarkAdd-12                  3619507               345 ns/op             197 B/op          6 allocs/op
+// BenchmarkAdd-12                          3714140               321 ns/op             195 B/op          6 allocs/op
 // BenchmarkGet
-// BenchmarkGet-12                     1663            765931 ns/op               0 B/op          0 allocs/op
+// BenchmarkGet-12                             1982            599333 ns/op               0 B/op          0 allocs/op
 // BenchmarkGetWithIndex
-// BenchmarkGetWithIndex-12        18395773                80.6 ns/op             0 B/op          0 allocs/op
+// BenchmarkGetWithIndex-12                20277746                58.2 ns/op             0 B/op          0 allocs/op
 // BenchmarkRemove
-// BenchmarkRemove-12                  1910            557853 ns/op               0 B/op          0 allocs/op
+// BenchmarkRemove-12                          2148            546817 ns/op               0 B/op          0 allocs/op
 // BenchmarkRemoveWithIndex
-// BenchmarkRemoveWithIndex-12     17457786                63.3 ns/op             0 B/op          0 allocs/op
+// BenchmarkRemoveWithIndex-12             16901769                64.6 ns/op             0 B/op          0 allocs/op
 // BenchmarkAddRemove
-// BenchmarkAddRemove-12             464210              2489 ns/op             453 B/op         15 allocs/op
+// BenchmarkAddRemove-12                     436630              2326 ns/op             459 B/op         15 allocs/op
 // BenchmarkUpdateWithIdx
-// BenchmarkUpdateWithIdx-12        2600654               411 ns/op             109 B/op          2 allocs/op
-// PASS
+// BenchmarkUpdateWithIdx-12                2973962               389 ns/op             103 B/op          2 allocs/op
+// BenchmarkGetWithIdxIntersection
+// BenchmarkGetWithIdxIntersection-12       5756240               200 ns/op              15 B/op          1 allocs/op
