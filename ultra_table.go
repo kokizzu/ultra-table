@@ -215,13 +215,14 @@ func (u *UltraTable) Get(iterator ItemIterator) []interface{} {
 func (u *UltraTable) GetAll() []interface{} {
 	u.mu.RLock()
 	defer u.mu.RUnlock()
-
+	emptyInc := 0
 	result := make([]interface{}, u.Len())
 	for i := 0; i < len(u.internalSlice); i++ {
 		if u.internalSlice[i] == nil {
+			emptyInc++
 			continue
 		}
-		result[i] = u.internalSlice[i]
+		result[i-emptyInc] = u.internalSlice[i]
 	}
 	return result
 }
