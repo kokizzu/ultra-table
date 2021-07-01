@@ -2,6 +2,7 @@ package ultra_table
 
 import (
 	"errors"
+	"unsafe"
 
 	"reflect"
 	"sync"
@@ -11,6 +12,10 @@ var (
 	RecordNotFound = errors.New("record not found")
 )
 
+type emptyInterface struct {
+	typ  *struct{}
+	word unsafe.Pointer
+}
 type uIndex struct {
 	uIndexList map[string]map[interface{}]map[uint64]uint8
 }
@@ -22,6 +27,7 @@ type UltraTable struct {
 	internalSlice []interface{}
 	uIndex        uIndex
 	emptyMap      map[uint64]uint8
+	tagMap        map[string]*tag
 }
 
 func NewUltraTable() *UltraTable {
@@ -29,24 +35,32 @@ func NewUltraTable() *UltraTable {
 		internalSlice: make([]interface{}, 0),
 		uIndex:        uIndex{uIndexList: map[string]map[interface{}]map[uint64]uint8{}},
 		emptyMap:      map[uint64]uint8{},
+		tagMap:        map[string]*tag{},
 	}
 }
 
-func (u *UltraTable) Add(dest interface{}) {
+func (u *UltraTable) Add(dest interface{}) error {
 	u.mu.Lock()
 	defer u.mu.Unlock()
 
 	if len(u.emptyMap) == 0 {
+		err := u.addIndex(dest, uint64(len(u.internalSlice)))
+		if err != nil {
+			return err
+		}
 		u.internalSlice = append(u.internalSlice, dest)
-		u.addIndex(dest, uint64(len(u.internalSlice)-1))
 	} else {
 		for i := range u.emptyMap {
-			u.addIndex(dest, i)
+			err := u.addIndex(dest, i)
+			if err != nil {
+				return err
+			}
 			u.internalSlice[i] = dest
 			delete(u.emptyMap, i)
-			return
+			return nil
 		}
 	}
+	return nil
 }
 
 //Get benchmark performance near O(n), it is recommended to use GetWithIdx
@@ -273,39 +287,99 @@ func (u *UltraTable) HasWithIdx(idxKey string, vKey interface{}) bool {
 }
 
 func (u *UltraTable) removeIndex(idx uint64, dest interface{}) {
-	value := reflect.ValueOf(dest)
-	for i := 0; i < value.NumField(); i++ {
-		tag := value.Type().Field(i).Tag.Get("index")
-		if tag == "" || tag == "-" {
-			continue
-		}
-		m, ok := u.uIndex.uIndexList[tag]
+	for name, tag := range u.tagMap {
+
+		m, ok := u.uIndex.uIndexList[name]
 		if ok {
-			delete(m[value.Field(i).Interface()], idx)
+			ptr0 := uintptr((*emptyInterface)(unsafe.Pointer(&dest)).word)
+			val := tag.GetPointerVal(unsafe.Pointer(ptr0 + tag.offset))
+			delete(m[val], idx)
 		}
 	}
 }
 
-func (u *UltraTable) addIndex(dest interface{}, idx uint64) {
-	value := reflect.ValueOf(dest)
-	for i := 0; i < value.NumField(); i++ {
-		tag, ok := value.Type().Field(i).Tag.Lookup("index")
-		if !ok {
-			continue
+func (u *UltraTable) addIndex(dest interface{}, idx uint64) error {
+	if len(u.tagMap) == 0 {
+		_value := reflect.ValueOf(dest)
+		for i := 0; i < _value.NumField(); i++ {
+			tagStr := _value.Type().Field(i).Tag.Get(`idx`)
+			if tagStr == "" || tagStr == "-" {
+				continue
+			}
+			indexType, err := getIndex(tagStr)
+			if err != nil {
+				return err
+			}
+			name := _value.Type().Field(i).Name
+			offset := _value.Type().Field(i).Offset
+
+			t, err := GetTag(_value.Field(i).Interface(), offset, indexType)
+			if err != nil {
+				if len(u.tagMap) > 0 {
+					u.tagMap = make(map[string]*tag, 0)
+				}
+				return err
+			}
+			u.tagMap[name] = t
 		}
-		if tag == "" || tag == "-" {
-			continue
-		}
-		m, ok := u.uIndex.uIndexList[tag]
+	}
+	if len(u.tagMap) == 0 {
+		return nil
+	}
+	ptr0 := uintptr((*emptyInterface)(unsafe.Pointer(&dest)).word)
+
+	for name, tag := range u.tagMap {
+		val := tag.GetPointerVal(unsafe.Pointer(ptr0 + tag.offset))
+		m, ok := u.uIndex.uIndexList[name]
 		if !ok {
-			u.uIndex.uIndexList[tag] = make(map[interface{}]map[uint64]uint8)
-			u.uIndex.uIndexList[tag][value.Field(i).Interface()] = map[uint64]uint8{idx: 0}
+			u.uIndex.uIndexList[name] = make(map[interface{}]map[uint64]uint8)
+			u.uIndex.uIndexList[name][val] = map[uint64]uint8{idx: 0}
 		} else {
-			if m[value.Field(i).Interface()] == nil {
-				m[value.Field(i).Interface()] = map[uint64]uint8{idx: 0}
+			if m[val] == nil {
+				m[val] = map[uint64]uint8{idx: 0}
 			} else {
-				m[value.Field(i).Interface()][idx] = 0
+				m[val][idx] = 0
 			}
 		}
 	}
+	return nil
 }
+
+// func (u *UltraTable) removeIndex(idx uint64, dest interface{}) {
+// 	value := reflect.ValueOf(dest)
+// 	for i := 0; i < value.NumField(); i++ {
+// 		tag := value.Type().Field(i).Tag.Get("index")
+// 		if tag == "" || tag == "-" {
+// 			continue
+// 		}
+// 		m, ok := u.uIndex.uIndexList[tag]
+// 		if ok {
+// 			delete(m[value.Field(i).Interface()], idx)
+// 		}
+// 	}
+// }
+
+// func (u *UltraTable) addIndex(dest interface{}, idx uint64) {
+// 	value := reflect.ValueOf(dest)
+// 	for i := 0; i < value.NumField(); i++ {
+// 		tag, ok := value.Type().Field(i).Tag.Lookup("index")
+// 		if !ok {
+// 			continue
+// 		}
+// 		if tag == "" || tag == "-" {
+// 			continue
+// 		}
+// 		val := value.Field(i).Interface()
+// 		m, ok := u.uIndex.uIndexList[tag]
+// 		if !ok {
+// 			u.uIndex.uIndexList[tag] = make(map[interface{}]map[uint64]uint8)
+// 			u.uIndex.uIndexList[tag][val] = map[uint64]uint8{idx: 0}
+// 		} else {
+// 			if m[val] == nil {
+// 				m[val] = map[uint64]uint8{idx: 0}
+// 			} else {
+// 				m[val][idx] = 0
+// 			}
+// 		}
+// 	}
+// }
