@@ -196,6 +196,150 @@ func TestUslice(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(len(list), ShouldEqual, 1)
 		})
+		Convey("Have Index GetWithIdxAggregate", func() {
+			type Order struct {
+				ID        string `idx:"normal"`
+				Account   string `idx:"normal"`
+				StockCode string `idx:"normal"`
+				Currency  string `idx:"normal"`
+				Amount    float64
+			}
+
+			Uslice := NewUltraTable()
+			Uslice.Add(Order{
+				ID:        "order_1",
+				Account:   "1001",
+				StockCode: "700",
+				Currency:  "HKD",
+				Amount:    55000,
+			})
+			Uslice.Add(Order{
+				ID:        "order_1",
+				Account:   "1001",
+				StockCode: "800",
+				Currency:  "HKD",
+				Amount:    55000,
+			})
+			Uslice.Add(Order{
+				ID:        "order_1",
+				Account:   "1001",
+				StockCode: "800",
+				Currency:  "HKD",
+				Amount:    55000,
+			})
+			Uslice.Add(Order{
+				ID:        "order_1",
+				Account:   "1002",
+				StockCode: "800",
+				Currency:  "HKD",
+				Amount:    55000,
+			})
+			Uslice.Add(Order{
+				ID:        "order_1",
+				Account:   "1002",
+				StockCode: "800",
+				Currency:  "USD",
+				Amount:    55000,
+			})
+
+			list, err := Uslice.GetWithIdxAggregate(map[string]interface{}{
+				"Account":   "1001",
+				"StockCode": "700",
+			})
+			So(err, ShouldBeNil)
+			So(len(list), ShouldEqual, 3)
+
+			list, err = Uslice.GetWithIdxAggregate(map[string]interface{}{
+				"Account":   "1001",
+				"StockCode": "800",
+			})
+			So(err, ShouldBeNil)
+			So(len(list), ShouldEqual, 5)
+
+			list, err = Uslice.GetWithIdxAggregate(map[string]interface{}{
+				"Account":   "1001",
+				"StockCode": "800",
+				"Currency":  "SGD",
+			})
+			So(err, ShouldBeNil)
+			So(len(list), ShouldEqual, 5)
+
+			list, err = Uslice.GetWithIdxAggregate(map[string]interface{}{
+				"Account":   "1001",
+				"StockCode": "800",
+				"Currency":  "USD",
+			})
+			So(err, ShouldBeNil)
+			So(len(list), ShouldEqual, 5)
+
+			list, err = Uslice.GetWithIdxAggregate(map[string]interface{}{
+				"Account":   "1002",
+				"StockCode": "800",
+				"Currency":  "USD",
+			})
+			So(err, ShouldBeNil)
+			So(len(list), ShouldEqual, 4)
+
+			type student struct {
+				Name  string `idx:"normal"`
+				Age   int    `idx:"normal"`
+				Class string `idx:"normal"`
+			}
+
+			t := NewUltraTable()
+			t.Add(student{
+				Name:  `a`,
+				Age:   18,
+				Class: `1`,
+			})
+			t.Add(student{
+				Name:  `b`,
+				Age:   18,
+				Class: `1`,
+			})
+			t.Add(student{
+				Name:  `c`,
+				Age:   20,
+				Class: `2`,
+			})
+			t.Add(student{
+				Name:  `d`,
+				Age:   17,
+				Class: `3`,
+			})
+			list, err = t.GetWithIdxAggregate(map[string]interface{}{
+				"Name": "a",
+				"Age":  18,
+			})
+			So(err, ShouldBeNil)
+			So(len(list), ShouldEqual, 2)
+
+			list, err = t.GetWithIdxAggregate(map[string]interface{}{
+				"Class": "1",
+			})
+			So(err, ShouldBeNil)
+			So(len(list), ShouldEqual, 2)
+
+			list, err = t.GetWithIdxAggregate(map[string]interface{}{
+				"Name": "d",
+			})
+			So(err, ShouldBeNil)
+			So(len(list), ShouldEqual, 1)
+
+			list, err = t.GetWithIdxAggregate(map[string]interface{}{
+				"Age":   17,
+				"Class": "0",
+			})
+			So(err, ShouldBeNil)
+			So(len(list), ShouldEqual, 1)
+
+			list, err = t.GetWithIdxAggregate(map[string]interface{}{
+				"Age":   17,
+				"Class": "1",
+			})
+			So(err, ShouldBeNil)
+			So(len(list), ShouldEqual, 3)
+		})
 	})
 
 }

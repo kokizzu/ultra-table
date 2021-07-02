@@ -152,6 +152,46 @@ func (u *UltraTable) GetWithIdx(idxKey string, vKey interface{}) ([]interface{},
 	return result, nil
 }
 
+//GetWithIdxAggregate like where a=? or b=?
+func (u *UltraTable) GetWithIdxAggregate(conditions map[string]interface{}) ([]interface{}, error) {
+	u.mu.RLock()
+	defer u.mu.RUnlock()
+
+	aggregateList := []map[uint64]uint8{}
+
+	for idxKey, vKey := range conditions {
+		index, ok := u.uIndex.uIndexList[idxKey]
+		if !ok {
+			continue
+		}
+		sliceList, ok := index[vKey]
+		if !ok {
+			continue
+		}
+		aggregateList = append(aggregateList, sliceList)
+	}
+	if len(aggregateList) == 0 {
+		return nil, RecordNotFound
+	}
+
+	var result []interface{}
+	tempMap := map[uint64]uint64{}
+
+	for _, aggregateSlice := range aggregateList {
+		for index := range aggregateSlice {
+			_, ok := tempMap[index]
+			if ok {
+				continue
+			}
+			tempMap[index] = 0
+		}
+	}
+	for k := range tempMap {
+		result = append(result, u.internalSlice[k])
+	}
+	return result, nil
+}
+
 //GetWithIdxIntersection like where a=? and b=?
 func (u *UltraTable) GetWithIdxIntersection(conditions map[string]interface{}) ([]interface{}, error) {
 	u.mu.RLock()
