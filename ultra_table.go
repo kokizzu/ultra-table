@@ -26,7 +26,7 @@ type UltraTable struct {
 	mu            sync.RWMutex
 	internalSlice []interface{}
 	uIndex        uIndex
-	emptyMap      map[uint64]uint8
+	emptyMap      *BitMap
 	tagMap        map[string]*tag
 }
 
@@ -34,7 +34,7 @@ func NewUltraTable() *UltraTable {
 	return &UltraTable{
 		internalSlice: make([]interface{}, 0),
 		uIndex:        uIndex{uIndexList: map[string]map[interface{}]map[uint64]uint8{}},
-		emptyMap:      map[uint64]uint8{},
+		emptyMap:      NewBitMap(),
 		tagMap:        map[string]*tag{},
 	}
 }
@@ -43,22 +43,30 @@ func (u *UltraTable) Add(dest interface{}) error {
 	u.mu.Lock()
 	defer u.mu.Unlock()
 
-	if len(u.emptyMap) == 0 {
+	if u.emptyMap.Length() == 0 {
 		err := u.addIndex(dest, uint64(len(u.internalSlice)))
 		if err != nil {
 			return err
 		}
 		u.internalSlice = append(u.internalSlice, dest)
 	} else {
-		for i := range u.emptyMap {
-			err := u.addIndex(dest, i)
-			if err != nil {
-				return err
-			}
-			u.internalSlice[i] = dest
-			delete(u.emptyMap, i)
-			return nil
+		i := u.emptyMap.Min()
+		err := u.addIndex(dest, uint64(i))
+		if err != nil {
+			return err
 		}
+		u.internalSlice[i] = dest
+		u.emptyMap.Remove(i)
+		return nil
+		// for i := range u.emptyMap {
+		// 	err := u.addIndex(dest, i)
+		// 	if err != nil {
+		// 		return err
+		// 	}
+		// 	u.internalSlice[i] = dest
+		// 	delete(u.emptyMap, i)
+		// 	return nil
+		// }
 	}
 	return nil
 }
@@ -75,7 +83,8 @@ func (u *UltraTable) Remove(iterator ItemIterator) uint64 {
 		if iterator(u.internalSlice[i]) {
 			u.removeIndex(uint64(i), u.internalSlice[i])
 			u.internalSlice[i] = nil
-			u.emptyMap[uint64(i)] = 0
+			u.emptyMap.Add(uint32(i))
+			//u.emptyMap[uint64(i)] = 0
 			count++
 		}
 	}
@@ -98,7 +107,8 @@ func (u *UltraTable) RemoveWithIdx(idxKey string, vKey interface{}) uint64 {
 	for k := range index[vKey] {
 		u.removeIndex(k, u.internalSlice[k])
 		u.internalSlice[k] = nil
-		u.emptyMap[k] = 0
+		u.emptyMap.Add(uint32(k))
+		//u.emptyMap[k] = 0
 		count++
 	}
 	return count
@@ -119,16 +129,22 @@ func (u *UltraTable) UpdateWithIdx(idxKey string, vKey interface{}, newDest inte
 	for k := range index[vKey] {
 		u.removeIndex(k, u.internalSlice[k])
 		u.internalSlice[k] = nil
-		u.emptyMap[k] = 0
+		u.emptyMap.Add(uint32(k))
+		//u.emptyMap[k] = 0
+
 		count++
 	}
 	for i := 0; i <= count-1; i++ {
-		for j := range u.emptyMap {
-			u.internalSlice[j] = newDest
-			u.addIndex(newDest, j)
-			delete(u.emptyMap, j)
-			break
-		}
+		j := u.emptyMap.Min()
+		u.internalSlice[j] = newDest
+		u.addIndex(newDest, uint64(j))
+		u.emptyMap.Remove(j)
+		// for j := range u.emptyMap {
+		// 	u.internalSlice[j] = newDest
+		// 	u.addIndex(newDest, j)
+		// 	delete(u.emptyMap, j)
+		// 	break
+		// }
 	}
 	return uint64(count)
 }
@@ -286,13 +302,14 @@ func (u *UltraTable) Clear() {
 	defer u.mu.Unlock()
 	u.internalSlice = make([]interface{}, 0)
 	u.uIndex = uIndex{uIndexList: map[string]map[interface{}]map[uint64]uint8{}}
-	u.emptyMap = make(map[uint64]uint8, 0)
+	u.emptyMap.Clear()
+	//u.emptyMap = make(map[uint64]uint8, 0)
 }
 
 func (u *UltraTable) Len() uint64 {
 	u.mu.RLock()
 	defer u.mu.RUnlock()
-	return uint64(len(u.internalSlice) - len(u.emptyMap))
+	return uint64(len(u.internalSlice) - int(u.emptyMap.Length()))
 }
 
 func (u *UltraTable) Cap() uint64 {
@@ -384,42 +401,3 @@ func (u *UltraTable) addIndex(dest interface{}, idx uint64) error {
 	}
 	return nil
 }
-
-// func (u *UltraTable) removeIndex(idx uint64, dest interface{}) {
-// 	value := reflect.ValueOf(dest)
-// 	for i := 0; i < value.NumField(); i++ {
-// 		tag := value.Type().Field(i).Tag.Get("index")
-// 		if tag == "" || tag == "-" {
-// 			continue
-// 		}
-// 		m, ok := u.uIndex.uIndexList[tag]
-// 		if ok {
-// 			delete(m[value.Field(i).Interface()], idx)
-// 		}
-// 	}
-// }
-
-// func (u *UltraTable) addIndex(dest interface{}, idx uint64) {
-// 	value := reflect.ValueOf(dest)
-// 	for i := 0; i < value.NumField(); i++ {
-// 		tag, ok := value.Type().Field(i).Tag.Lookup("index")
-// 		if !ok {
-// 			continue
-// 		}
-// 		if tag == "" || tag == "-" {
-// 			continue
-// 		}
-// 		val := value.Field(i).Interface()
-// 		m, ok := u.uIndex.uIndexList[tag]
-// 		if !ok {
-// 			u.uIndex.uIndexList[tag] = make(map[interface{}]map[uint64]uint8)
-// 			u.uIndex.uIndexList[tag][val] = map[uint64]uint8{idx: 0}
-// 		} else {
-// 			if m[val] == nil {
-// 				m[val] = map[uint64]uint8{idx: 0}
-// 			} else {
-// 				m[val][idx] = 0
-// 			}
-// 		}
-// 	}
-// }
