@@ -1,8 +1,6 @@
 package ultra_table
 
-import (
-	"github.com/RoaringBitmap/roaring"
-)
+import "github.com/RoaringBitmap/roaring"
 
 type BitMap struct {
 	*roaring.Bitmap
@@ -14,7 +12,16 @@ func NewBitMap() *BitMap {
 	}
 }
 
+func (b *BitMap) CloneIterator(f func(uint32)) {
+
+	i := b.Bitmap.Clone().Iterator()
+	for i.HasNext() {
+		f(i.Next())
+	}
+}
+
 func (b *BitMap) Iterator(f func(uint32)) {
+
 	i := b.Bitmap.Iterator()
 	for i.HasNext() {
 		f(i.Next())

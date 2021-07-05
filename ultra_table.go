@@ -17,25 +17,25 @@ type emptyInterface struct {
 	word unsafe.Pointer
 }
 type uIndex struct {
-	uIndexList map[string]map[interface{}]map[uint64]uint8
+	uIndexList map[string]map[interface{}]*BitMap
 }
 
 type ItemIterator func(interface{}) bool
 
 type UltraTable struct {
-	mu            sync.RWMutex
-	internalSlice []interface{}
-	uIndex        uIndex
-	emptyMap      *BitMap
-	tagMap        map[string]*tag
+	mu       sync.RWMutex
+	table    []interface{}
+	uIndex   uIndex
+	emptyMap *BitMap
+	tagMap   map[string]*tag
 }
 
 func NewUltraTable() *UltraTable {
 	return &UltraTable{
-		internalSlice: make([]interface{}, 0),
-		uIndex:        uIndex{uIndexList: map[string]map[interface{}]map[uint64]uint8{}},
-		emptyMap:      NewBitMap(),
-		tagMap:        map[string]*tag{},
+		table:    make([]interface{}, 0),
+		uIndex:   uIndex{uIndexList: map[string]map[interface{}]*BitMap{}},
+		emptyMap: NewBitMap(),
+		tagMap:   map[string]*tag{},
 	}
 }
 
@@ -44,29 +44,20 @@ func (u *UltraTable) Add(dest interface{}) error {
 	defer u.mu.Unlock()
 
 	if u.emptyMap.Length() == 0 {
-		err := u.addIndex(dest, uint64(len(u.internalSlice)))
+		err := u.addIndex(dest, uint32(len(u.table)))
 		if err != nil {
 			return err
 		}
-		u.internalSlice = append(u.internalSlice, dest)
+		u.table = append(u.table, dest)
 	} else {
 		i := u.emptyMap.Min()
-		err := u.addIndex(dest, uint64(i))
+		err := u.addIndex(dest, i)
 		if err != nil {
 			return err
 		}
-		u.internalSlice[i] = dest
+		u.table[i] = dest
 		u.emptyMap.Remove(i)
 		return nil
-		// for i := range u.emptyMap {
-		// 	err := u.addIndex(dest, i)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// 	u.internalSlice[i] = dest
-		// 	delete(u.emptyMap, i)
-		// 	return nil
-		// }
 	}
 	return nil
 }
@@ -76,15 +67,14 @@ func (u *UltraTable) Remove(iterator ItemIterator) uint64 {
 	u.mu.Lock()
 	defer u.mu.Unlock()
 	var count uint64
-	for i := 0; i < len(u.internalSlice); i++ {
-		if u.internalSlice[i] == nil {
+	for i := 0; i < len(u.table); i++ {
+		if u.table[i] == nil {
 			continue
 		}
-		if iterator(u.internalSlice[i]) {
-			u.removeIndex(uint64(i), u.internalSlice[i])
-			u.internalSlice[i] = nil
+		if iterator(u.table[i]) {
+			u.removeIndex(uint32(i), u.table[i])
+			u.table[i] = nil
 			u.emptyMap.Add(uint32(i))
-			//u.emptyMap[uint64(i)] = 0
 			count++
 		}
 	}
@@ -104,13 +94,12 @@ func (u *UltraTable) RemoveWithIdx(idxKey string, vKey interface{}) uint64 {
 		return 0
 	}
 	count := uint64(0)
-	for k := range index[vKey] {
-		u.removeIndex(k, u.internalSlice[k])
-		u.internalSlice[k] = nil
-		u.emptyMap.Add(uint32(k))
-		//u.emptyMap[k] = 0
+	index[vKey].CloneIterator(func(k uint32) {
+		u.removeIndex(k, u.table[k])
+		u.table[k] = nil
+		u.emptyMap.Add(k)
 		count++
-	}
+	})
 	return count
 }
 
@@ -126,25 +115,18 @@ func (u *UltraTable) UpdateWithIdx(idxKey string, vKey interface{}, newDest inte
 		return 0
 	}
 	count := 0
-	for k := range index[vKey] {
-		u.removeIndex(k, u.internalSlice[k])
-		u.internalSlice[k] = nil
-		u.emptyMap.Add(uint32(k))
-		//u.emptyMap[k] = 0
-
+	index[vKey].CloneIterator(func(k uint32) {
+		u.removeIndex(uint32(k), u.table[k])
+		u.table[k] = nil
+		u.emptyMap.Add(k)
 		count++
-	}
+	})
+
 	for i := 0; i <= count-1; i++ {
 		j := u.emptyMap.Min()
-		u.internalSlice[j] = newDest
-		u.addIndex(newDest, uint64(j))
+		u.table[j] = newDest
+		u.addIndex(newDest, j)
 		u.emptyMap.Remove(j)
-		// for j := range u.emptyMap {
-		// 	u.internalSlice[j] = newDest
-		// 	u.addIndex(newDest, j)
-		// 	delete(u.emptyMap, j)
-		// 	break
-		// }
 	}
 	return uint64(count)
 }
@@ -161,10 +143,12 @@ func (u *UltraTable) GetWithIdx(idxKey string, vKey interface{}) ([]interface{},
 	if !ok {
 		return nil, RecordNotFound
 	}
-	var result []interface{}
-	for k := range sliceList {
-		result = append(result, u.internalSlice[k])
-	}
+	result := make([]interface{}, sliceList.Length())
+	count := 0
+	sliceList.Iterator(func(k uint32) {
+		result[count] = u.table[k]
+		count++
+	})
 	return result, nil
 }
 
@@ -173,7 +157,7 @@ func (u *UltraTable) GetWithIdxAggregate(conditions map[string]interface{}) ([]i
 	u.mu.RLock()
 	defer u.mu.RUnlock()
 
-	aggregateList := []map[uint64]uint8{}
+	aggregateList := []*BitMap{}
 
 	for idxKey, vKey := range conditions {
 		index, ok := u.uIndex.uIndexList[idxKey]
@@ -190,20 +174,22 @@ func (u *UltraTable) GetWithIdxAggregate(conditions map[string]interface{}) ([]i
 		return nil, RecordNotFound
 	}
 
-	var result []interface{}
-	tempMap := map[uint64]uint64{}
+	tempMap := map[uint32]uint64{}
 
 	for _, aggregateSlice := range aggregateList {
-		for index := range aggregateSlice {
+		aggregateSlice.Iterator(func(index uint32) {
 			_, ok := tempMap[index]
 			if ok {
-				continue
+				return
 			}
 			tempMap[index] = 0
-		}
+		})
 	}
+	result := make([]interface{}, len(tempMap))
+	count := 0
 	for k := range tempMap {
-		result = append(result, u.internalSlice[k])
+		result[count] = u.table[k]
+		count++
 	}
 	return result, nil
 }
@@ -213,7 +199,7 @@ func (u *UltraTable) GetWithIdxIntersection(conditions map[string]interface{}) (
 	u.mu.RLock()
 	defer u.mu.RUnlock()
 
-	intersectionList := []map[uint64]uint8{}
+	intersectionList := []*BitMap{}
 
 	minLen := 0
 	minLenIndex := 0
@@ -229,12 +215,12 @@ func (u *UltraTable) GetWithIdxIntersection(conditions map[string]interface{}) (
 		}
 		intersectionList = append(intersectionList, sliceList)
 		if len(intersectionList) > 1 {
-			if len(sliceList) < minLen {
+			if int(sliceList.Length()) < minLen {
 				minLenIndex = len(intersectionList) - 1
-				minLen = len(sliceList)
+				minLen = int(sliceList.Length())
 			}
 		} else {
-			minLen = len(sliceList)
+			minLen = int(sliceList.Length())
 			minLenIndex = 0
 		}
 	}
@@ -244,23 +230,24 @@ func (u *UltraTable) GetWithIdxIntersection(conditions map[string]interface{}) (
 	}
 
 	var result []interface{}
-	tempMap := map[uint64]uint64{}
+	tempMap := map[uint32]uint64{}
 
-	for k := range intersectionList[minLenIndex] {
+	intersectionList[minLenIndex].Iterator(func(k uint32) {
 		tempMap[k] = 1
 		for i := 0; i < len(intersectionList); i++ {
 			if i == minLenIndex {
 				continue
 			}
-			if _, ok := intersectionList[i][k]; ok {
+
+			if ok := intersectionList[i].IsExist(k); ok {
 				tempMap[k] = tempMap[k] + 1
 			}
 		}
-	}
+	})
 
 	for k, v := range tempMap {
 		if v == uint64(len(intersectionList)) {
-			result = append(result, u.internalSlice[k])
+			result = append(result, u.table[k])
 		}
 	}
 	return result, nil
@@ -271,12 +258,12 @@ func (u *UltraTable) Get(iterator ItemIterator) []interface{} {
 	u.mu.RLock()
 	defer u.mu.RUnlock()
 	var result []interface{}
-	for i := 0; i < len(u.internalSlice); i++ {
-		if u.internalSlice[i] == nil {
+	for i := 0; i < len(u.table); i++ {
+		if u.table[i] == nil {
 			continue
 		}
-		if iterator(u.internalSlice[i]) {
-			result = append(result, u.internalSlice[i])
+		if iterator(u.table[i]) {
+			result = append(result, u.table[i])
 		}
 	}
 	return result
@@ -287,12 +274,12 @@ func (u *UltraTable) GetAll() []interface{} {
 	defer u.mu.RUnlock()
 	emptyInc := 0
 	result := make([]interface{}, u.Len())
-	for i := 0; i < len(u.internalSlice); i++ {
-		if u.internalSlice[i] == nil {
+	for i := 0; i < len(u.table); i++ {
+		if u.table[i] == nil {
 			emptyInc++
 			continue
 		}
-		result[i-emptyInc] = u.internalSlice[i]
+		result[i-emptyInc] = u.table[i]
 	}
 	return result
 }
@@ -300,32 +287,31 @@ func (u *UltraTable) GetAll() []interface{} {
 func (u *UltraTable) Clear() {
 	u.mu.Lock()
 	defer u.mu.Unlock()
-	u.internalSlice = make([]interface{}, 0)
-	u.uIndex = uIndex{uIndexList: map[string]map[interface{}]map[uint64]uint8{}}
+	u.table = make([]interface{}, 0)
+	u.uIndex = uIndex{uIndexList: map[string]map[interface{}]*BitMap{}}
 	u.emptyMap.Clear()
-	//u.emptyMap = make(map[uint64]uint8, 0)
 }
 
 func (u *UltraTable) Len() uint64 {
 	u.mu.RLock()
 	defer u.mu.RUnlock()
-	return uint64(len(u.internalSlice) - int(u.emptyMap.Length()))
+	return uint64(len(u.table) - int(u.emptyMap.Length()))
 }
 
 func (u *UltraTable) Cap() uint64 {
 	u.mu.RLock()
 	defer u.mu.RUnlock()
-	return uint64(len(u.internalSlice))
+	return uint64(len(u.table))
 }
 
 func (u *UltraTable) Has(iterator ItemIterator) bool {
 	u.mu.RLock()
 	defer u.mu.RUnlock()
-	for i := 0; i < len(u.internalSlice); i++ {
-		if u.internalSlice[i] == nil {
+	for i := 0; i < len(u.table); i++ {
+		if u.table[i] == nil {
 			continue
 		}
-		if iterator(u.internalSlice[i]) {
+		if iterator(u.table[i]) {
 			return true
 		}
 	}
@@ -343,19 +329,19 @@ func (u *UltraTable) HasWithIdx(idxKey string, vKey interface{}) bool {
 	return ok
 }
 
-func (u *UltraTable) removeIndex(idx uint64, dest interface{}) {
+func (u *UltraTable) removeIndex(idx uint32, dest interface{}) {
 	for name, tag := range u.tagMap {
 
 		m, ok := u.uIndex.uIndexList[name]
 		if ok {
 			ptr0 := uintptr((*emptyInterface)(unsafe.Pointer(&dest)).word)
 			val := tag.GetPointerVal(unsafe.Pointer(ptr0 + tag.offset))
-			delete(m[val], idx)
+			m[val].Remove(idx)
 		}
 	}
 }
 
-func (u *UltraTable) addIndex(dest interface{}, idx uint64) error {
+func (u *UltraTable) addIndex(dest interface{}, idx uint32) error {
 	if len(u.tagMap) == 0 {
 		_value := reflect.ValueOf(dest)
 		for i := 0; i < _value.NumField(); i++ {
@@ -389,14 +375,14 @@ func (u *UltraTable) addIndex(dest interface{}, idx uint64) error {
 		val := tag.GetPointerVal(unsafe.Pointer(ptr0 + tag.offset))
 		m, ok := u.uIndex.uIndexList[name]
 		if !ok {
-			u.uIndex.uIndexList[name] = make(map[interface{}]map[uint64]uint8)
-			u.uIndex.uIndexList[name][val] = map[uint64]uint8{idx: 0}
+			u.uIndex.uIndexList[name] = make(map[interface{}]*BitMap)
+			u.uIndex.uIndexList[name][val] = NewBitMap()
+			u.uIndex.uIndexList[name][val].Add(idx)
 		} else {
 			if m[val] == nil {
-				m[val] = map[uint64]uint8{idx: 0}
-			} else {
-				m[val][idx] = 0
+				m[val] = NewBitMap()
 			}
+			m[val].Add(idx)
 		}
 	}
 	return nil
