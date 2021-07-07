@@ -978,6 +978,35 @@ func Test_SaveWithIdxAggregate(t *testing.T) {
 				So(v.(Order).Amount, ShouldEqual, 500.4)
 			}
 		}
+
+		count = ultraTable.SaveWithIdxIntersection(map[string]interface{}{`Account`: `1005`, `StockCode`: `900`}, Order{
+			ID:        `order_4`,
+			Account:   "1005",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    500.5,
+		})
+		So(count, ShouldEqual, 1)
+		So(ultraTable.Len(), ShouldEqual, 4)
+
+		for idx, v := range ultraTable.GetAll() {
+			if idx == 0 {
+				So(v.(Order).ID, ShouldEqual, `order_2`)
+				So(v.(Order).Amount, ShouldEqual, 500.3)
+			}
+			if idx == 1 {
+				So(v.(Order).ID, ShouldEqual, `order_2`)
+				So(v.(Order).Amount, ShouldEqual, 500.3)
+			}
+			if idx == 2 {
+				So(v.(Order).ID, ShouldEqual, `order_3`)
+				So(v.(Order).Amount, ShouldEqual, 500.4)
+			}
+			if idx == 3 {
+				So(v.(Order).ID, ShouldEqual, `order_4`)
+				So(v.(Order).Amount, ShouldEqual, 500.5)
+			}
+		}
 	})
 }
 

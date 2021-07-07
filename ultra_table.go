@@ -230,7 +230,20 @@ func (u *UltraTable) SaveWithIdxIntersection(conditions map[string]interface{}, 
 		}
 	}
 
-	if len(intersectionList) == 0 {
+	tempMap := map[uint32]uint64{}
+	if len(intersectionList) >= minLenIndex+1 && intersectionList[minLenIndex] != nil {
+		intersectionList[minLenIndex].Iterator(func(k uint32) {
+			tempMap[k] = 1
+			for i := 0; i < len(intersectionList); i++ {
+				if i == minLenIndex {
+					continue
+				}
+				if ok := intersectionList[i].IsExist(k); ok {
+					tempMap[k] = tempMap[k] + 1
+				}
+			}
+		})
+	} else {
 		if u.emptyMap.Length() == 0 {
 			err := u.addIndex(newDest, uint32(len(u.table)))
 			if err != nil {
@@ -249,26 +262,12 @@ func (u *UltraTable) SaveWithIdxIntersection(conditions map[string]interface{}, 
 		return 1
 	}
 
-	tempMap := map[uint32]uint64{}
-
-	intersectionList[minLenIndex].Iterator(func(k uint32) {
-		tempMap[k] = 1
-		for i := 0; i < len(intersectionList); i++ {
-			if i == minLenIndex {
-				continue
-			}
-
-			if ok := intersectionList[i].IsExist(k); ok {
-				tempMap[k] = tempMap[k] + 1
-			}
-		}
-	})
-
 	for k := range tempMap {
 		u.removeIndex(uint32(k), u.table[k])
 		u.table[k] = newDest
 		u.addIndex(newDest, k)
 	}
+
 	return uint64(len(tempMap))
 }
 
