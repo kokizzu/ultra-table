@@ -813,3 +813,139 @@ func Test_Type(t *testing.T) {
 
 	})
 }
+
+func Test_SaveWithIdx(t *testing.T) {
+	Convey("SaveWithIdx", t, func() {
+		type Order struct {
+			ID        string `idx:"normal"`
+			Account   string `idx:"normal"`
+			StockCode string `idx:"normal"`
+			Currency  string
+			Amount    float64
+		}
+		ultraTable := NewUltraTable()
+
+		count := ultraTable.SaveWithIdx(`ID`, `order_1`, Order{
+			ID:        `order_1`,
+			Account:   "1001",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    500.1,
+		})
+
+		So(count, ShouldEqual, 1)
+		So(ultraTable.Len(), ShouldEqual, 1)
+
+		orders, err := ultraTable.GetWithIdx(`Account`, `1001`)
+		So(err, ShouldBeNil)
+		So(orders[0].(Order).Amount, ShouldEqual, 500.1)
+
+		count = ultraTable.SaveWithIdx(`ID`, `order_1`, Order{
+			ID:        `order_1`,
+			Account:   "1001",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    500.2,
+		})
+
+		So(count, ShouldEqual, 1)
+
+		orders, err = ultraTable.GetWithIdx(`Account`, `1001`)
+		So(err, ShouldBeNil)
+		So(orders[0].(Order).Amount, ShouldEqual, 500.2)
+		So(ultraTable.Len(), ShouldEqual, 1)
+
+		count = ultraTable.SaveWithIdx(`Account`, `1001`, Order{
+			ID:        `order_1`,
+			Account:   "1001",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    500.3,
+		})
+
+		So(count, ShouldEqual, 1)
+
+		orders, err = ultraTable.GetWithIdx(`Account`, `1001`)
+		So(err, ShouldBeNil)
+		So(orders[0].(Order).Amount, ShouldEqual, 500.3)
+		So(ultraTable.Len(), ShouldEqual, 1)
+
+		count = ultraTable.SaveWithIdx(`Account`, `1002`, Order{
+			ID:        `order_1`,
+			Account:   "1002",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    500.5,
+		})
+
+		So(count, ShouldEqual, 1)
+
+		orders, err = ultraTable.GetWithIdx(`Account`, `1002`)
+		So(err, ShouldBeNil)
+		So(orders[0].(Order).Amount, ShouldEqual, 500.5)
+		So(ultraTable.Len(), ShouldEqual, 2)
+	})
+}
+
+func Test_Kind(t *testing.T) {
+	Convey("struct", t, func() {
+		type Order struct {
+			ID        string `idx:"normal"`
+			Account   string `idx:"normal"`
+			StockCode string `idx:"normal"`
+			Currency  string
+			Amount    float64
+		}
+		ultraTable := NewUltraTable()
+		ultraTable.Add(Order{
+			ID:        `order_1`,
+			Account:   "1001",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    500.1,
+		})
+		orders, err := ultraTable.GetWithIdx(`Account`, `1001`)
+		So(err, ShouldBeNil)
+		So(orders[0].(Order).Amount, ShouldEqual, 500.1)
+
+		order := orders[0].(Order)
+		order.Amount = 500.2
+
+		orders, err = ultraTable.GetWithIdx(`Account`, `1001`)
+		So(err, ShouldBeNil)
+		So(orders[0].(Order).Amount, ShouldEqual, 500.1)
+
+		count := ultraTable.UpdateWithIdx("Account", "1001", Order{
+			ID:        `order_3`,
+			Account:   "1001",
+			StockCode: "800",
+			Currency:  "HKD",
+			Amount:    500.2,
+		})
+		So(count, ShouldEqual, 1)
+
+		orders, err = ultraTable.GetWithIdx(`Account`, `1001`)
+		So(err, ShouldBeNil)
+		So(orders[0].(Order).Amount, ShouldEqual, 500.2)
+	})
+
+	Convey("ptr", t, func() {
+		type Order struct {
+			ID        string `idx:"normal"`
+			Account   string `idx:"normal"`
+			StockCode string `idx:"normal"`
+			Currency  string
+			Amount    float64
+		}
+		ultraTable := NewUltraTable()
+		err := ultraTable.Add(&Order{
+			ID:        `order_1`,
+			Account:   "1001",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    500.1,
+		})
+		So(err, ShouldEqual, OnlySupportStruct)
+
+	})
+}

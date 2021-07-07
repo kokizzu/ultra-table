@@ -9,7 +9,8 @@ import (
 )
 
 var (
-	RecordNotFound = errors.New("record not found")
+	RecordNotFound    = errors.New("record not found")
+	OnlySupportStruct = errors.New("only support struct")
 )
 
 type emptyInterface struct {
@@ -83,8 +84,8 @@ func (u *UltraTable) Remove(iterator ItemIterator) uint64 {
 
 //RemoveWithIdx benchmark performance near O(1)
 func (u *UltraTable) RemoveWithIdx(idxKey string, vKey interface{}) uint64 {
-	u.mu.RLock()
-	defer u.mu.RUnlock()
+	u.mu.Lock()
+	defer u.mu.Unlock()
 	index, ok := u.uIndex.uIndexList[idxKey]
 	if !ok {
 		return 0
@@ -104,8 +105,8 @@ func (u *UltraTable) RemoveWithIdx(idxKey string, vKey interface{}) uint64 {
 }
 
 func (u *UltraTable) UpdateWithIdx(idxKey string, vKey interface{}, newDest interface{}) uint64 {
-	u.mu.RLock()
-	defer u.mu.RUnlock()
+	u.mu.Lock()
+	defer u.mu.Unlock()
 	index, ok := u.uIndex.uIndexList[idxKey]
 	if !ok {
 		return 0
@@ -129,6 +130,19 @@ func (u *UltraTable) UpdateWithIdx(idxKey string, vKey interface{}, newDest inte
 		u.emptyMap.Remove(j)
 	}
 	return uint64(count)
+}
+
+//SaveWithIdx update or insert
+func (u *UltraTable) SaveWithIdx(idxKey string, vKey interface{}, newDest interface{}) uint64 {
+	if u.HasWithIdx(idxKey, vKey) {
+		return u.UpdateWithIdx(idxKey, vKey, newDest)
+	}
+	err := u.Add(newDest)
+	if err != nil {
+		return 0
+	} else {
+		return 1
+	}
 }
 
 //Get benchmark performance near O(1)
@@ -344,6 +358,9 @@ func (u *UltraTable) removeIndex(idx uint32, dest interface{}) {
 func (u *UltraTable) addIndex(dest interface{}, idx uint32) error {
 	if len(u.tagMap) == 0 {
 		_value := reflect.ValueOf(dest)
+		if _value.Kind() != reflect.Struct {
+			return OnlySupportStruct
+		}
 		for i := 0; i < _value.NumField(); i++ {
 			tagStr := _value.Type().Field(i).Tag.Get(`idx`)
 			if tagStr == "" || tagStr == "-" {
