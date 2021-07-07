@@ -241,12 +241,23 @@ func (u *UltraTable) SaveWithIdxIntersection(conditions map[string]interface{}, 
 					continue
 				}
 				if ok := intersectionList[i].IsExist(k); ok {
-					tempMap[k] = tempMap[k] + 1
+					tempMap[k] += 1
 				}
 			}
 		})
 	}
-	if len(tempMap) == 0 {
+	isReplace := false
+	count := 0
+	for k, v := range tempMap {
+		if v == uint64(len(intersectionList)) {
+			u.removeIndex(uint32(k), u.table[k])
+			u.table[k] = newDest
+			u.addIndex(newDest, k)
+			isReplace = true
+			count++
+		}
+	}
+	if !isReplace {
 		if u.emptyMap.Length() == 0 {
 			err := u.addIndex(newDest, uint32(len(u.table)))
 			if err != nil {
@@ -264,13 +275,8 @@ func (u *UltraTable) SaveWithIdxIntersection(conditions map[string]interface{}, 
 		}
 		return 1
 	} else {
-		for k := range tempMap {
-			u.removeIndex(uint32(k), u.table[k])
-			u.table[k] = newDest
-			u.addIndex(newDest, k)
-		}
+		return uint64(count)
 	}
-	return uint64(len(tempMap))
 }
 
 //Get benchmark performance near O(1)
@@ -382,7 +388,7 @@ func (u *UltraTable) GetWithIdxIntersection(conditions map[string]interface{}) (
 			}
 
 			if ok := intersectionList[i].IsExist(k); ok {
-				tempMap[k] = tempMap[k] + 1
+				tempMap[k] += 1
 			}
 		}
 	})

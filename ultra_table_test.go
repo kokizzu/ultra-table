@@ -339,9 +339,15 @@ func TestUslice(t *testing.T) {
 			})
 			So(err, ShouldBeNil)
 			So(len(list), ShouldEqual, 3)
+
+			list, err = t.GetWithIdxIntersection(map[string]interface{}{
+				"Name": "d",
+				"Age":  20,
+			})
+			So(err, ShouldBeNil)
+			So(len(list), ShouldEqual, 0)
 		})
 	})
-
 }
 
 func Test_Clear(t *testing.T) {
@@ -1028,6 +1034,53 @@ func Test_SaveWithIdxAggregateAndIntersection(t *testing.T) {
 		So(count, ShouldEqual, 1)
 		So(ultraTable.Len(), ShouldEqual, 6)
 
+		ultraTable = NewUltraTable()
+
+		type StaticQuote struct {
+			AccountChannel string `idx:"normal"`
+			CounterID      string `idx:"normal"`
+			Plevel         string
+			ImFactor       float64
+			MmFactor       float64
+			FmFactor       float64
+		}
+		for i := 0; i < 100; i++ {
+			counterID := fmt.Sprintf(`ST/HK/%v`, i)
+			list, _ := ultraTable.GetWithIdxIntersection(map[string]interface{}{`AccountChannel`: `pspl_sg`, `CounterID`: counterID})
+			So(len(list), ShouldEqual, 0)
+
+			ultraTable.SaveWithIdxIntersection(map[string]interface{}{`AccountChannel`: `pspl_sg`, `CounterID`: counterID}, StaticQuote{
+				AccountChannel: `pspl_sg`,
+				CounterID:      counterID,
+				Plevel:         `A`,
+				ImFactor:       0.5,
+				MmFactor:       0.4,
+				FmFactor:       0.3,
+			})
+
+			So(ultraTable.Len(), ShouldEqual, i+1)
+
+			list, _ = ultraTable.GetWithIdxIntersection(map[string]interface{}{`AccountChannel`: `pspl_sg`, `CounterID`: counterID})
+			So(len(list), ShouldEqual, 1)
+		}
+		So(ultraTable.Len(), ShouldEqual, 100)
+
+		for i := 0; i < 100; i++ {
+			counterID := fmt.Sprintf(`ST/HK/%v`, i)
+			ultraTable.SaveWithIdxIntersection(map[string]interface{}{`AccountChannel`: `lb`, `CounterID`: counterID}, StaticQuote{
+				AccountChannel: `lb`,
+				CounterID:      counterID,
+				Plevel:         `A`,
+				ImFactor:       0.5,
+				MmFactor:       0.4,
+				FmFactor:       0.3,
+			})
+			So(ultraTable.Len(), ShouldEqual, 100+i+1)
+
+			list, _ = ultraTable.GetWithIdxIntersection(map[string]interface{}{`AccountChannel`: `lb`, `CounterID`: counterID})
+			So(len(list), ShouldEqual, 1)
+		}
+		So(ultraTable.Len(), ShouldEqual, 200)
 	})
 }
 
