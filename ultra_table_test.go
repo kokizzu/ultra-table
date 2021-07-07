@@ -887,6 +887,100 @@ func Test_SaveWithIdx(t *testing.T) {
 	})
 }
 
+func Test_SaveWithIdxAggregate(t *testing.T) {
+	Convey("SaveWithIdx", t, func() {
+		type Order struct {
+			ID        string `idx:"normal"`
+			Account   string `idx:"normal"`
+			StockCode string `idx:"normal"`
+			Currency  string
+			Amount    float64
+		}
+		ultraTable := NewUltraTable()
+
+		count := ultraTable.SaveWithIdxAggregate(map[string]interface{}{`ID`: `order_1`}, Order{
+			ID:        `order_1`,
+			Account:   "1001",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    500.1,
+		})
+
+		So(count, ShouldEqual, 1)
+		So(ultraTable.Len(), ShouldEqual, 1)
+
+		count = ultraTable.SaveWithIdxAggregate(map[string]interface{}{`ID`: `order_2`}, Order{
+			ID:        `order_2`,
+			Account:   "1001",
+			StockCode: "800",
+			Currency:  "HKD",
+			Amount:    500.1,
+		})
+
+		So(count, ShouldEqual, 1)
+		So(ultraTable.Len(), ShouldEqual, 2)
+
+		list, err := ultraTable.GetWithIdxIntersection(map[string]interface{}{`Account`: `1001`, `StockCode`: `700`})
+		So(err, ShouldBeNil)
+		So(len(list), ShouldEqual, 1)
+
+		list, err = ultraTable.GetWithIdxAggregate(map[string]interface{}{`Account`: `1001`, `StockCode`: `700`})
+		So(err, ShouldBeNil)
+		So(len(list), ShouldEqual, 2)
+
+		count = ultraTable.SaveWithIdxIntersection(map[string]interface{}{`Account`: `1001`, `StockCode`: `700`}, Order{
+			ID:        `order_2`,
+			Account:   "1001",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    500.2,
+		})
+		So(count, ShouldEqual, 1)
+		So(ultraTable.Len(), ShouldEqual, 2)
+
+		for idx, v := range ultraTable.GetAll() {
+			if idx == 0 {
+				So(v.(Order).Amount, ShouldEqual, 500.2)
+			}
+			if idx == 1 {
+				So(v.(Order).Amount, ShouldEqual, 500.1)
+			}
+		}
+		count = ultraTable.SaveWithIdxAggregate(map[string]interface{}{`Account`: `1001`, `StockCode`: `700`}, Order{
+			ID:        `order_2`,
+			Account:   "1001",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    500.3,
+		})
+		So(count, ShouldEqual, 2)
+		So(ultraTable.Len(), ShouldEqual, 2)
+
+		count = ultraTable.SaveWithIdxAggregate(map[string]interface{}{`Account`: `1003`, `StockCode`: `900`}, Order{
+			ID:        `order_3`,
+			Account:   "1001",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    500.4,
+		})
+
+		for idx, v := range ultraTable.GetAll() {
+			if idx == 0 {
+				So(v.(Order).ID, ShouldEqual, `order_2`)
+				So(v.(Order).Amount, ShouldEqual, 500.3)
+			}
+			if idx == 1 {
+				So(v.(Order).ID, ShouldEqual, `order_2`)
+				So(v.(Order).Amount, ShouldEqual, 500.3)
+			}
+			if idx == 2 {
+				So(v.(Order).ID, ShouldEqual, `order_3`)
+				So(v.(Order).Amount, ShouldEqual, 500.4)
+			}
+		}
+	})
+}
+
 func Test_Kind(t *testing.T) {
 	Convey("struct", t, func() {
 		type Order struct {
