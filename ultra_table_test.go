@@ -887,7 +887,7 @@ func Test_SaveWithIdx(t *testing.T) {
 	})
 }
 
-func Test_SaveWithIdxAggregate(t *testing.T) {
+func Test_SaveWithIdxAggregateAndIntersection(t *testing.T) {
 	Convey("SaveWithIdx", t, func() {
 		type Order struct {
 			ID        string `idx:"normal"`
@@ -1010,13 +1010,23 @@ func Test_SaveWithIdxAggregate(t *testing.T) {
 
 		count = ultraTable.SaveWithIdxIntersection(map[string]interface{}{`Account`: `1005`, `StockCode`: `1000`}, Order{
 			ID:        `order_5`,
-			Account:   "1006",
-			StockCode: "700",
+			Account:   "1005",
+			StockCode: "1000",
 			Currency:  "HKD",
 			Amount:    500.5,
 		})
 		So(count, ShouldEqual, 1)
 		So(ultraTable.Len(), ShouldEqual, 5)
+
+		count = ultraTable.SaveWithIdxIntersection(map[string]interface{}{`Account`: `1005`, `StockCode`: `800`}, Order{
+			ID:        `order_6`,
+			Account:   "1006",
+			StockCode: "1100",
+			Currency:  "HKD",
+			Amount:    500.6,
+		})
+		So(count, ShouldEqual, 1)
+		So(ultraTable.Len(), ShouldEqual, 6)
 
 	})
 }

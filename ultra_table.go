@@ -245,7 +245,8 @@ func (u *UltraTable) SaveWithIdxIntersection(conditions map[string]interface{}, 
 				}
 			}
 		})
-	} else {
+	}
+	if len(tempMap) == 0 {
 		if u.emptyMap.Length() == 0 {
 			err := u.addIndex(newDest, uint32(len(u.table)))
 			if err != nil {
@@ -262,14 +263,13 @@ func (u *UltraTable) SaveWithIdxIntersection(conditions map[string]interface{}, 
 			u.emptyMap.Remove(i)
 		}
 		return 1
+	} else {
+		for k := range tempMap {
+			u.removeIndex(uint32(k), u.table[k])
+			u.table[k] = newDest
+			u.addIndex(newDest, k)
+		}
 	}
-
-	for k := range tempMap {
-		u.removeIndex(uint32(k), u.table[k])
-		u.table[k] = newDest
-		u.addIndex(newDest, k)
-	}
-
 	return uint64(len(tempMap))
 }
 
