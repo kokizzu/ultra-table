@@ -212,10 +212,12 @@ func (u *UltraTable) SaveWithIdxIntersection(conditions map[string]interface{}, 
 	for idxKey, vKey := range conditions {
 		index, ok := u.uIndex.uIndexList[idxKey]
 		if !ok {
+			intersectionList = []*BitMap{}
 			break
 		}
 		sliceList, ok := index[vKey]
 		if !ok {
+			intersectionList = []*BitMap{}
 			break
 		}
 		intersectionList = append(intersectionList, sliceList)

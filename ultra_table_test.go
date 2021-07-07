@@ -1007,6 +1007,17 @@ func Test_SaveWithIdxAggregate(t *testing.T) {
 				So(v.(Order).Amount, ShouldEqual, 500.5)
 			}
 		}
+
+		count = ultraTable.SaveWithIdxIntersection(map[string]interface{}{`Account`: `1005`, `StockCode`: `1000`}, Order{
+			ID:        `order_5`,
+			Account:   "1006",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    500.5,
+		})
+		So(count, ShouldEqual, 1)
+		So(ultraTable.Len(), ShouldEqual, 5)
+
 	})
 }
 
