@@ -1146,3 +1146,105 @@ func Test_Kind(t *testing.T) {
 
 	})
 }
+
+func Test_HasWithIdx(t *testing.T) {
+	type Order struct {
+		ID        string `idx:"normal"`
+		Account   string `idx:"normal"`
+		StockCode string `idx:"normal"`
+		Currency  string
+		Amount    float64
+	}
+	ultraTable := NewUltraTable()
+
+	ultraTable.Add(Order{
+		ID:        `order_1`,
+		Account:   "1001",
+		StockCode: "700",
+		Currency:  "HKD",
+		Amount:    500.1,
+	})
+
+	ultraTable.Add(Order{
+		ID:        `order_2`,
+		Account:   "1001",
+		StockCode: "700",
+		Currency:  "HKD",
+		Amount:    500.1,
+	})
+
+	ultraTable.Add(Order{
+		ID:        `order_3`,
+		Account:   "1002",
+		StockCode: "700",
+		Currency:  "HKD",
+		Amount:    500.1,
+	})
+
+	ultraTable.Add(Order{
+		ID:        `order_4`,
+		Account:   "1002",
+		StockCode: "700",
+		Currency:  "HKD",
+		Amount:    500.1,
+	})
+
+	ultraTable.Add(Order{
+		ID:        `order_5`,
+		Account:   "1002",
+		StockCode: "700",
+		Currency:  "HKD",
+		Amount:    500.1,
+	})
+
+	Convey("HasWithIdx", t, func() {
+		So(ultraTable.HasWithIdx(`ID`, `order_1`), ShouldBeTrue)
+		So(ultraTable.HasWithIdx(`Account`, `1002`), ShouldBeTrue)
+		So(ultraTable.HasWithIdx(`Account`, `1003`), ShouldBeFalse)
+		So(ultraTable.HasWithIdx(`Currency`, `HKD`), ShouldBeFalse)
+	})
+	Convey("GetWithIdxCount", t, func() {
+		So(ultraTable.GetWithIdxCount(`ID`, `order_1`), ShouldEqual, 1)
+		So(ultraTable.GetWithIdxCount(`Account`, `1002`), ShouldEqual, 3)
+		So(ultraTable.GetWithIdxCount(`Account`, `1003`), ShouldEqual, 0)
+		So(ultraTable.GetWithIdxCount(`Currency`, `HKD`), ShouldEqual, 0)
+	})
+	Convey("GetWithIdxAggregateCount", t, func() {
+		So(ultraTable.GetWithIdxAggregateCount(map[string]interface{}{
+			`ID`:      `order_1`,
+			`Account`: `1001`,
+		}), ShouldEqual, 2)
+		So(ultraTable.GetWithIdxAggregateCount(map[string]interface{}{
+			`ID`:      `order_2`,
+			`Account`: `1001`,
+		}), ShouldEqual, 2)
+		So(ultraTable.GetWithIdxAggregateCount(map[string]interface{}{
+			`ID`:      `order_6`,
+			`Account`: `1001`,
+		}), ShouldEqual, 2)
+
+		So(ultraTable.GetWithIdxAggregateCount(map[string]interface{}{
+			`ID`:      `order_6`,
+			`Account`: `1003`,
+		}), ShouldEqual, 0)
+	})
+	Convey("GetWithIdxIntersectionCount", t, func() {
+		So(ultraTable.GetWithIdxIntersectionCount(map[string]interface{}{
+			`ID`:      `order_1`,
+			`Account`: `1001`,
+		}), ShouldEqual, 1)
+		So(ultraTable.GetWithIdxIntersectionCount(map[string]interface{}{
+			`ID`:      `order_2`,
+			`Account`: `1002`,
+		}), ShouldEqual, 0)
+		So(ultraTable.GetWithIdxIntersectionCount(map[string]interface{}{
+			`ID`:      `order_6`,
+			`Account`: `1001`,
+		}), ShouldEqual, 0)
+
+		So(ultraTable.GetWithIdxIntersectionCount(map[string]interface{}{
+			`ID`:      `order_6`,
+			`Account`: `1003`,
+		}), ShouldEqual, 0)
+	})
+}

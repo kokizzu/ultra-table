@@ -477,6 +477,111 @@ func (u *UltraTable) HasWithIdx(idxKey string, vKey interface{}) bool {
 	return ok
 }
 
+func (u *UltraTable) GetWithIdxCount(idxKey string, vKey interface{}) uint64 {
+	u.mu.RLock()
+	defer u.mu.RUnlock()
+	index, ok := u.uIndex.uIndexList[idxKey]
+	if !ok {
+		return 0
+	}
+	bitMap, ok := index[vKey]
+	if !ok {
+		return 0
+	}
+	return bitMap.Length()
+}
+
+func (u *UltraTable) GetWithIdxIntersectionCount(conditions map[string]interface{}) uint64 {
+	u.mu.RLock()
+	defer u.mu.RUnlock()
+
+	intersectionList := []*BitMap{}
+
+	minLen := 0
+	minLenIndex := 0
+
+	for idxKey, vKey := range conditions {
+		index, ok := u.uIndex.uIndexList[idxKey]
+		if !ok {
+			return 0
+		}
+		sliceList, ok := index[vKey]
+		if !ok {
+			return 0
+		}
+		intersectionList = append(intersectionList, sliceList)
+		if len(intersectionList) > 1 {
+			if int(sliceList.Length()) < minLen {
+				minLenIndex = len(intersectionList) - 1
+				minLen = int(sliceList.Length())
+			}
+		} else {
+			minLen = int(sliceList.Length())
+			minLenIndex = 0
+		}
+	}
+	if len(intersectionList) == 0 {
+		return 0
+	}
+
+	tempMap := map[uint32]uint64{}
+
+	intersectionList[minLenIndex].Iterator(func(k uint32) {
+		tempMap[k] = 1
+		for i := 0; i < len(intersectionList); i++ {
+			if i == minLenIndex {
+				continue
+			}
+			if ok := intersectionList[i].IsExist(k); ok {
+				tempMap[k] += 1
+			}
+		}
+	})
+	count := 0
+	for _, v := range tempMap {
+		if v == uint64(len(intersectionList)) {
+			count++
+		}
+	}
+	return uint64(count)
+}
+
+func (u *UltraTable) GetWithIdxAggregateCount(conditions map[string]interface{}) uint64 {
+	u.mu.RLock()
+	defer u.mu.RUnlock()
+
+	aggregateList := []*BitMap{}
+
+	for idxKey, vKey := range conditions {
+		index, ok := u.uIndex.uIndexList[idxKey]
+		if !ok {
+			continue
+		}
+		sliceList, ok := index[vKey]
+		if !ok {
+			continue
+		}
+		aggregateList = append(aggregateList, sliceList)
+	}
+	if len(aggregateList) == 0 {
+		return 0
+	}
+
+	tempMap := map[uint32]uint8{}
+
+	for _, aggregateSlice := range aggregateList {
+		aggregateSlice.Iterator(func(index uint32) {
+			_, ok := tempMap[index]
+			if ok {
+				return
+			}
+			tempMap[index] = 0
+		})
+	}
+
+	return uint64(len(tempMap))
+}
+
 func (u *UltraTable) removeIndex(idx uint32, dest interface{}) {
 	for name, tag := range u.tagMap {
 
