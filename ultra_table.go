@@ -17,26 +17,29 @@ type emptyInterface struct {
 	typ  *struct{}
 	word unsafe.Pointer
 }
-type uIndex struct {
-	uIndexList map[string]map[interface{}]*BitMap
+type IndexGroup struct {
+	indexItems map[string]map[interface{}]*BitMap
+	indexTags  map[string]*tag
+}
+
+func (indexGroup *IndexGroup) IndexTagLen() int {
+	return len(indexGroup.indexTags)
 }
 
 type ItemIterator func(interface{}) bool
 
 type UltraTable struct {
-	mu       sync.RWMutex
-	table    []interface{}
-	uIndex   uIndex
-	emptyMap *BitMap
-	tagMap   map[string]*tag
+	mu         sync.RWMutex
+	table      []interface{}
+	indexGroup IndexGroup
+	emptyMap   *BitMap
 }
 
 func NewUltraTable() *UltraTable {
 	return &UltraTable{
-		table:    make([]interface{}, 0),
-		uIndex:   uIndex{uIndexList: map[string]map[interface{}]*BitMap{}},
-		emptyMap: NewBitMap(),
-		tagMap:   map[string]*tag{},
+		table:      make([]interface{}, 0),
+		indexGroup: IndexGroup{indexItems: map[string]map[interface{}]*BitMap{}, indexTags: map[string]*tag{}},
+		emptyMap:   NewBitMap(),
 	}
 }
 
@@ -86,7 +89,7 @@ func (u *UltraTable) Remove(iterator ItemIterator) uint64 {
 func (u *UltraTable) RemoveWithIdx(idxKey string, vKey interface{}) uint64 {
 	u.mu.Lock()
 	defer u.mu.Unlock()
-	index, ok := u.uIndex.uIndexList[idxKey]
+	index, ok := u.indexGroup.indexItems[idxKey]
 	if !ok {
 		return 0
 	}
@@ -107,7 +110,7 @@ func (u *UltraTable) RemoveWithIdx(idxKey string, vKey interface{}) uint64 {
 func (u *UltraTable) UpdateWithIdx(idxKey string, vKey interface{}, newDest interface{}) uint64 {
 	u.mu.Lock()
 	defer u.mu.Unlock()
-	index, ok := u.uIndex.uIndexList[idxKey]
+	index, ok := u.indexGroup.indexItems[idxKey]
 	if !ok {
 		return 0
 	}
@@ -152,7 +155,7 @@ func (u *UltraTable) SaveWithIdxAggregate(conditions map[string]interface{}, new
 	aggregateList := []*BitMap{}
 
 	for idxKey, vKey := range conditions {
-		index, ok := u.uIndex.uIndexList[idxKey]
+		index, ok := u.indexGroup.indexItems[idxKey]
 		if !ok {
 			continue
 		}
@@ -210,7 +213,7 @@ func (u *UltraTable) SaveWithIdxIntersection(conditions map[string]interface{}, 
 	minLenIndex := 0
 
 	for idxKey, vKey := range conditions {
-		index, ok := u.uIndex.uIndexList[idxKey]
+		index, ok := u.indexGroup.indexItems[idxKey]
 		if !ok {
 			intersectionList = []*BitMap{}
 			break
@@ -283,7 +286,7 @@ func (u *UltraTable) SaveWithIdxIntersection(conditions map[string]interface{}, 
 func (u *UltraTable) GetWithIdx(idxKey string, vKey interface{}) ([]interface{}, error) {
 	u.mu.RLock()
 	defer u.mu.RUnlock()
-	index, ok := u.uIndex.uIndexList[idxKey]
+	index, ok := u.indexGroup.indexItems[idxKey]
 	if !ok {
 		return nil, RecordNotFound
 	}
@@ -308,7 +311,7 @@ func (u *UltraTable) GetWithIdxAggregate(conditions map[string]interface{}) ([]i
 	aggregateList := []*BitMap{}
 
 	for idxKey, vKey := range conditions {
-		index, ok := u.uIndex.uIndexList[idxKey]
+		index, ok := u.indexGroup.indexItems[idxKey]
 		if !ok {
 			continue
 		}
@@ -353,7 +356,7 @@ func (u *UltraTable) GetWithIdxIntersection(conditions map[string]interface{}) (
 	minLenIndex := 0
 
 	for idxKey, vKey := range conditions {
-		index, ok := u.uIndex.uIndexList[idxKey]
+		index, ok := u.indexGroup.indexItems[idxKey]
 		if !ok {
 			return nil, RecordNotFound
 		}
@@ -436,7 +439,7 @@ func (u *UltraTable) Clear() {
 	u.mu.Lock()
 	defer u.mu.Unlock()
 	u.table = make([]interface{}, 0)
-	u.uIndex = uIndex{uIndexList: map[string]map[interface{}]*BitMap{}}
+	u.indexGroup = IndexGroup{indexItems: map[string]map[interface{}]*BitMap{}}
 	u.emptyMap.Clear()
 }
 
@@ -469,7 +472,7 @@ func (u *UltraTable) Has(iterator ItemIterator) bool {
 func (u *UltraTable) HasWithIdx(idxKey string, vKey interface{}) bool {
 	u.mu.RLock()
 	defer u.mu.RUnlock()
-	index, ok := u.uIndex.uIndexList[idxKey]
+	index, ok := u.indexGroup.indexItems[idxKey]
 	if !ok {
 		return false
 	}
@@ -480,7 +483,7 @@ func (u *UltraTable) HasWithIdx(idxKey string, vKey interface{}) bool {
 func (u *UltraTable) GetWithIdxCount(idxKey string, vKey interface{}) uint64 {
 	u.mu.RLock()
 	defer u.mu.RUnlock()
-	index, ok := u.uIndex.uIndexList[idxKey]
+	index, ok := u.indexGroup.indexItems[idxKey]
 	if !ok {
 		return 0
 	}
@@ -501,7 +504,7 @@ func (u *UltraTable) GetWithIdxIntersectionCount(conditions map[string]interface
 	minLenIndex := 0
 
 	for idxKey, vKey := range conditions {
-		index, ok := u.uIndex.uIndexList[idxKey]
+		index, ok := u.indexGroup.indexItems[idxKey]
 		if !ok {
 			return 0
 		}
@@ -553,7 +556,7 @@ func (u *UltraTable) GetWithIdxAggregateCount(conditions map[string]interface{})
 	aggregateList := []*BitMap{}
 
 	for idxKey, vKey := range conditions {
-		index, ok := u.uIndex.uIndexList[idxKey]
+		index, ok := u.indexGroup.indexItems[idxKey]
 		if !ok {
 			continue
 		}
@@ -583,9 +586,9 @@ func (u *UltraTable) GetWithIdxAggregateCount(conditions map[string]interface{})
 }
 
 func (u *UltraTable) removeIndex(idx uint32, dest interface{}) {
-	for name, tag := range u.tagMap {
+	for name, tag := range u.indexGroup.indexTags {
 
-		m, ok := u.uIndex.uIndexList[name]
+		m, ok := u.indexGroup.indexItems[name]
 		if ok {
 			ptr0 := uintptr((*emptyInterface)(unsafe.Pointer(&dest)).word)
 			val := tag.GetPointerVal(unsafe.Pointer(ptr0 + tag.offset))
@@ -595,7 +598,7 @@ func (u *UltraTable) removeIndex(idx uint32, dest interface{}) {
 }
 
 func (u *UltraTable) addIndex(dest interface{}, idx uint32) error {
-	if len(u.tagMap) == 0 {
+	if len(u.indexGroup.indexTags) == 0 {
 		_value := reflect.ValueOf(dest)
 		if _value.Kind() != reflect.Struct {
 			return OnlySupportStruct
@@ -614,26 +617,26 @@ func (u *UltraTable) addIndex(dest interface{}, idx uint32) error {
 
 			t, err := GetTag(_value.Field(i).Interface(), offset, indexType)
 			if err != nil {
-				if len(u.tagMap) > 0 {
-					u.tagMap = make(map[string]*tag, 0)
+				if u.indexGroup.IndexTagLen() > 0 {
+					u.indexGroup.indexTags = make(map[string]*tag, 0)
 				}
 				return err
 			}
-			u.tagMap[name] = t
+			u.indexGroup.indexTags[name] = t
 		}
 	}
-	if len(u.tagMap) == 0 {
+	if u.indexGroup.IndexTagLen() == 0 {
 		return nil
 	}
 	ptr0 := uintptr((*emptyInterface)(unsafe.Pointer(&dest)).word)
 
-	for name, tag := range u.tagMap {
+	for name, tag := range u.indexGroup.indexTags {
 		val := tag.GetPointerVal(unsafe.Pointer(ptr0 + tag.offset))
-		m, ok := u.uIndex.uIndexList[name]
+		m, ok := u.indexGroup.indexItems[name]
 		if !ok {
-			u.uIndex.uIndexList[name] = make(map[interface{}]*BitMap)
-			u.uIndex.uIndexList[name][val] = NewBitMap()
-			u.uIndex.uIndexList[name][val].Add(idx)
+			u.indexGroup.indexItems[name] = make(map[interface{}]*BitMap)
+			u.indexGroup.indexItems[name][val] = NewBitMap()
+			u.indexGroup.indexItems[name][val].Add(idx)
 		} else {
 			if m[val] == nil {
 				m[val] = NewBitMap()
