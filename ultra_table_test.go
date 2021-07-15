@@ -288,24 +288,24 @@ func TestUslice(t *testing.T) {
 
 			t := NewUltraTable()
 			t.Add(student{
-				Name:  `a`,
+				Name:  "A",
 				Age:   18,
-				Class: `1`,
+				Class: "1",
 			})
 			t.Add(student{
 				Name:  `b`,
 				Age:   18,
-				Class: `1`,
+				Class: "1",
 			})
 			t.Add(student{
 				Name:  `c`,
 				Age:   20,
-				Class: `2`,
+				Class: "2",
 			})
 			t.Add(student{
 				Name:  `d`,
 				Age:   17,
-				Class: `3`,
+				Class: "3",
 			})
 			list, err = t.GetWithIdxAggregate(map[string]interface{}{
 				"Name": "a",
@@ -390,28 +390,28 @@ func Test_Remove(t *testing.T) {
 		Convey("Remove-1", func() {
 			ultraTable := NewUltraTable()
 			ultraTable.Add(Order{
-				ID:        `1`,
+				ID:        "1",
 				Account:   "1001",
 				StockCode: "700",
 				Currency:  "HKD",
 				Amount:    100,
 			})
 			ultraTable.Add(Order{
-				ID:        `1`,
+				ID:        "1",
 				Account:   "1001",
 				StockCode: "9988",
 				Currency:  "HKD",
 				Amount:    100,
 			})
-			So(ultraTable.RemoveWithIdx(`ID`, `1`), ShouldEqual, 2)
+			So(ultraTable.RemoveWithIdx(`ID`, "1"), ShouldEqual, 2)
 			So(ultraTable.Len(), ShouldEqual, 0)
-			So(ultraTable.RemoveWithIdx(`ID`, `1`), ShouldEqual, 0)
+			So(ultraTable.RemoveWithIdx(`ID`, "1"), ShouldEqual, 0)
 			So(ultraTable.RemoveWithIdx(`Account`, `1001`), ShouldEqual, 0)
 			So(ultraTable.RemoveWithIdx(`StockCode`, `700`), ShouldEqual, 0)
 			So(ultraTable.Len(), ShouldEqual, 0)
 
 			ultraTable.Add(Order{
-				ID:        `2`,
+				ID:        "2",
 				Account:   "1001",
 				StockCode: "700",
 				Currency:  "HKD",
@@ -419,7 +419,7 @@ func Test_Remove(t *testing.T) {
 			})
 			So(ultraTable.Len(), ShouldEqual, 1)
 			ultraTable.Add(Order{
-				ID:        `3`,
+				ID:        "3",
 				Account:   "1001",
 				StockCode: "700",
 				Currency:  "HKD",
@@ -603,7 +603,7 @@ func Test_Update(t *testing.T) {
 		}
 		ultraTable := NewUltraTable()
 		ultraTable.Add(Order{
-			ID:        `order_1`,
+			ID:        "order_1",
 			Account:   "1001",
 			StockCode: "700",
 			Currency:  "HKD",
@@ -615,7 +615,7 @@ func Test_Update(t *testing.T) {
 		So(orders[0].(Order).Amount, ShouldEqual, 500.1)
 
 		count := ultraTable.UpdateWithIdx("ID", "order_1", Order{
-			ID:        `order_1`,
+			ID:        "order_1",
 			Account:   "1001",
 			StockCode: "700",
 			Currency:  "HKD",
@@ -628,21 +628,21 @@ func Test_Update(t *testing.T) {
 		So(orders[0].(Order).Amount, ShouldEqual, 500.2)
 
 		ultraTable.Add(Order{
-			ID:        `order_2`,
+			ID:        "order_2",
 			Account:   "1001",
 			StockCode: "700",
 			Currency:  "HKD",
 			Amount:    500.1,
 		})
 		ultraTable.Add(Order{
-			ID:        `order_2`,
+			ID:        "order_2",
 			Account:   "1001",
 			StockCode: "700",
 			Currency:  "HKD",
 			Amount:    500.1,
 		})
 		ultraTable.Add(Order{
-			ID:        `order_2`,
+			ID:        "order_2",
 			Account:   "1001",
 			StockCode: "700",
 			Currency:  "HKD",
@@ -650,7 +650,7 @@ func Test_Update(t *testing.T) {
 		})
 
 		count = ultraTable.UpdateWithIdx("ID", "order_2", Order{
-			ID:        `order_3`,
+			ID:        "order_3",
 			Account:   "1001",
 			StockCode: "700",
 			Currency:  "HKD",
@@ -666,7 +666,7 @@ func Test_Update(t *testing.T) {
 		So(orders[2].(Order).Amount, ShouldEqual, 500.2)
 
 		count = ultraTable.UpdateWithIdx("StockCode", "700", Order{
-			ID:        `order_3`,
+			ID:        "order_3",
 			Account:   "1001",
 			StockCode: "800",
 			Currency:  "HKD",
@@ -831,8 +831,8 @@ func Test_SaveWithIdx(t *testing.T) {
 		}
 		ultraTable := NewUltraTable()
 
-		count := ultraTable.SaveWithIdx(`ID`, `order_1`, Order{
-			ID:        `order_1`,
+		count := ultraTable.SaveWithIdx(`ID`, "order_1", Order{
+			ID:        "order_1",
 			Account:   "1001",
 			StockCode: "700",
 			Currency:  "HKD",
@@ -846,8 +846,8 @@ func Test_SaveWithIdx(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(orders[0].(Order).Amount, ShouldEqual, 500.1)
 
-		count = ultraTable.SaveWithIdx(`ID`, `order_1`, Order{
-			ID:        `order_1`,
+		count = ultraTable.SaveWithIdx(`ID`, "order_1", Order{
+			ID:        "order_1",
 			Account:   "1001",
 			StockCode: "700",
 			Currency:  "HKD",
@@ -862,7 +862,7 @@ func Test_SaveWithIdx(t *testing.T) {
 		So(ultraTable.Len(), ShouldEqual, 1)
 
 		count = ultraTable.SaveWithIdx(`Account`, `1001`, Order{
-			ID:        `order_1`,
+			ID:        "order_1",
 			Account:   "1001",
 			StockCode: "700",
 			Currency:  "HKD",
@@ -877,7 +877,7 @@ func Test_SaveWithIdx(t *testing.T) {
 		So(ultraTable.Len(), ShouldEqual, 1)
 
 		count = ultraTable.SaveWithIdx(`Account`, `1002`, Order{
-			ID:        `order_1`,
+			ID:        "order_1",
 			Account:   "1002",
 			StockCode: "700",
 			Currency:  "HKD",
@@ -904,8 +904,8 @@ func Test_SaveWithIdxAggregateAndIntersection(t *testing.T) {
 		}
 		ultraTable := NewUltraTable()
 
-		count := ultraTable.SaveWithIdxAggregate(map[string]interface{}{`ID`: `order_1`}, Order{
-			ID:        `order_1`,
+		count := ultraTable.SaveWithIdxAggregate(map[string]interface{}{`ID`: "order_1"}, Order{
+			ID:        "order_1",
 			Account:   "1001",
 			StockCode: "700",
 			Currency:  "HKD",
@@ -915,8 +915,8 @@ func Test_SaveWithIdxAggregateAndIntersection(t *testing.T) {
 		So(count, ShouldEqual, 1)
 		So(ultraTable.Len(), ShouldEqual, 1)
 
-		count = ultraTable.SaveWithIdxAggregate(map[string]interface{}{`ID`: `order_2`}, Order{
-			ID:        `order_2`,
+		count = ultraTable.SaveWithIdxAggregate(map[string]interface{}{`ID`: "order_2"}, Order{
+			ID:        "order_2",
 			Account:   "1001",
 			StockCode: "800",
 			Currency:  "HKD",
@@ -935,7 +935,7 @@ func Test_SaveWithIdxAggregateAndIntersection(t *testing.T) {
 		So(len(list), ShouldEqual, 2)
 
 		count = ultraTable.SaveWithIdxIntersection(map[string]interface{}{`Account`: `1001`, `StockCode`: `700`}, Order{
-			ID:        `order_2`,
+			ID:        "order_2",
 			Account:   "1001",
 			StockCode: "700",
 			Currency:  "HKD",
@@ -953,7 +953,7 @@ func Test_SaveWithIdxAggregateAndIntersection(t *testing.T) {
 			}
 		}
 		count = ultraTable.SaveWithIdxAggregate(map[string]interface{}{`Account`: `1001`, `StockCode`: `700`}, Order{
-			ID:        `order_2`,
+			ID:        "order_2",
 			Account:   "1001",
 			StockCode: "700",
 			Currency:  "HKD",
@@ -963,7 +963,7 @@ func Test_SaveWithIdxAggregateAndIntersection(t *testing.T) {
 		So(ultraTable.Len(), ShouldEqual, 2)
 
 		count = ultraTable.SaveWithIdxAggregate(map[string]interface{}{`Account`: `1003`, `StockCode`: `900`}, Order{
-			ID:        `order_3`,
+			ID:        "order_3",
 			Account:   "1001",
 			StockCode: "700",
 			Currency:  "HKD",
@@ -972,21 +972,21 @@ func Test_SaveWithIdxAggregateAndIntersection(t *testing.T) {
 
 		for idx, v := range ultraTable.GetAll() {
 			if idx == 0 {
-				So(v.(Order).ID, ShouldEqual, `order_2`)
+				So(v.(Order).ID, ShouldEqual, "order_2")
 				So(v.(Order).Amount, ShouldEqual, 500.3)
 			}
 			if idx == 1 {
-				So(v.(Order).ID, ShouldEqual, `order_2`)
+				So(v.(Order).ID, ShouldEqual, "order_2")
 				So(v.(Order).Amount, ShouldEqual, 500.3)
 			}
 			if idx == 2 {
-				So(v.(Order).ID, ShouldEqual, `order_3`)
+				So(v.(Order).ID, ShouldEqual, "order_3")
 				So(v.(Order).Amount, ShouldEqual, 500.4)
 			}
 		}
 
 		count = ultraTable.SaveWithIdxIntersection(map[string]interface{}{`Account`: `1005`, `StockCode`: `900`}, Order{
-			ID:        `order_4`,
+			ID:        "order_4",
 			Account:   "1005",
 			StockCode: "700",
 			Currency:  "HKD",
@@ -997,25 +997,25 @@ func Test_SaveWithIdxAggregateAndIntersection(t *testing.T) {
 
 		for idx, v := range ultraTable.GetAll() {
 			if idx == 0 {
-				So(v.(Order).ID, ShouldEqual, `order_2`)
+				So(v.(Order).ID, ShouldEqual, "order_2")
 				So(v.(Order).Amount, ShouldEqual, 500.3)
 			}
 			if idx == 1 {
-				So(v.(Order).ID, ShouldEqual, `order_2`)
+				So(v.(Order).ID, ShouldEqual, "order_2")
 				So(v.(Order).Amount, ShouldEqual, 500.3)
 			}
 			if idx == 2 {
-				So(v.(Order).ID, ShouldEqual, `order_3`)
+				So(v.(Order).ID, ShouldEqual, "order_3")
 				So(v.(Order).Amount, ShouldEqual, 500.4)
 			}
 			if idx == 3 {
-				So(v.(Order).ID, ShouldEqual, `order_4`)
+				So(v.(Order).ID, ShouldEqual, "order_4")
 				So(v.(Order).Amount, ShouldEqual, 500.5)
 			}
 		}
 
 		count = ultraTable.SaveWithIdxIntersection(map[string]interface{}{`Account`: `1005`, `StockCode`: `1000`}, Order{
-			ID:        `order_5`,
+			ID:        "order_5",
 			Account:   "1005",
 			StockCode: "1000",
 			Currency:  "HKD",
@@ -1025,7 +1025,7 @@ func Test_SaveWithIdxAggregateAndIntersection(t *testing.T) {
 		So(ultraTable.Len(), ShouldEqual, 5)
 
 		count = ultraTable.SaveWithIdxIntersection(map[string]interface{}{`Account`: `1005`, `StockCode`: `800`}, Order{
-			ID:        `order_6`,
+			ID:        "order_6",
 			Account:   "1006",
 			StockCode: "1100",
 			Currency:  "HKD",
@@ -1046,13 +1046,13 @@ func Test_SaveWithIdxAggregateAndIntersection(t *testing.T) {
 		}
 		for i := 0; i < 100; i++ {
 			counterID := fmt.Sprintf(`ST/HK/%v`, i)
-			list, _ := ultraTable.GetWithIdxIntersection(map[string]interface{}{`AccountChannel`: `pspl_sg`, `CounterID`: counterID})
+			list, _ := ultraTable.GetWithIdxIntersection(map[string]interface{}{`AccountChannel`: "pspl_sg", `CounterID`: counterID})
 			So(len(list), ShouldEqual, 0)
 
-			ultraTable.SaveWithIdxIntersection(map[string]interface{}{`AccountChannel`: `pspl_sg`, `CounterID`: counterID}, StaticQuote{
-				AccountChannel: `pspl_sg`,
+			ultraTable.SaveWithIdxIntersection(map[string]interface{}{`AccountChannel`: "pspl_sg", `CounterID`: counterID}, StaticQuote{
+				AccountChannel: "pspl_sg",
 				CounterID:      counterID,
-				Plevel:         `A`,
+				Plevel:         "A",
 				ImFactor:       0.5,
 				MmFactor:       0.4,
 				FmFactor:       0.3,
@@ -1060,7 +1060,7 @@ func Test_SaveWithIdxAggregateAndIntersection(t *testing.T) {
 
 			So(ultraTable.Len(), ShouldEqual, i+1)
 
-			list, _ = ultraTable.GetWithIdxIntersection(map[string]interface{}{`AccountChannel`: `pspl_sg`, `CounterID`: counterID})
+			list, _ = ultraTable.GetWithIdxIntersection(map[string]interface{}{`AccountChannel`: "pspl_sg", `CounterID`: counterID})
 			So(len(list), ShouldEqual, 1)
 		}
 		So(ultraTable.Len(), ShouldEqual, 100)
@@ -1070,7 +1070,7 @@ func Test_SaveWithIdxAggregateAndIntersection(t *testing.T) {
 			ultraTable.SaveWithIdxIntersection(map[string]interface{}{`AccountChannel`: `lb`, `CounterID`: counterID}, StaticQuote{
 				AccountChannel: `lb`,
 				CounterID:      counterID,
-				Plevel:         `A`,
+				Plevel:         "A",
 				ImFactor:       0.5,
 				MmFactor:       0.4,
 				FmFactor:       0.3,
@@ -1095,7 +1095,7 @@ func Test_Kind(t *testing.T) {
 		}
 		ultraTable := NewUltraTable()
 		ultraTable.Add(Order{
-			ID:        `order_1`,
+			ID:        "order_1",
 			Account:   "1001",
 			StockCode: "700",
 			Currency:  "HKD",
@@ -1113,7 +1113,7 @@ func Test_Kind(t *testing.T) {
 		So(orders[0].(Order).Amount, ShouldEqual, 500.1)
 
 		count := ultraTable.UpdateWithIdx("Account", "1001", Order{
-			ID:        `order_3`,
+			ID:        "order_3",
 			Account:   "1001",
 			StockCode: "800",
 			Currency:  "HKD",
@@ -1136,7 +1136,7 @@ func Test_Kind(t *testing.T) {
 		}
 		ultraTable := NewUltraTable()
 		err := ultraTable.Add(&Order{
-			ID:        `order_1`,
+			ID:        "order_1",
 			Account:   "1001",
 			StockCode: "700",
 			Currency:  "HKD",
@@ -1158,7 +1158,7 @@ func Test_HasWithIdx(t *testing.T) {
 	ultraTable := NewUltraTable()
 
 	ultraTable.Add(Order{
-		ID:        `order_1`,
+		ID:        "order_1",
 		Account:   "1001",
 		StockCode: "700",
 		Currency:  "HKD",
@@ -1166,7 +1166,7 @@ func Test_HasWithIdx(t *testing.T) {
 	})
 
 	ultraTable.Add(Order{
-		ID:        `order_2`,
+		ID:        "order_2",
 		Account:   "1001",
 		StockCode: "700",
 		Currency:  "HKD",
@@ -1174,7 +1174,7 @@ func Test_HasWithIdx(t *testing.T) {
 	})
 
 	ultraTable.Add(Order{
-		ID:        `order_3`,
+		ID:        "order_3",
 		Account:   "1002",
 		StockCode: "700",
 		Currency:  "HKD",
@@ -1182,7 +1182,7 @@ func Test_HasWithIdx(t *testing.T) {
 	})
 
 	ultraTable.Add(Order{
-		ID:        `order_4`,
+		ID:        "order_4",
 		Account:   "1002",
 		StockCode: "700",
 		Currency:  "HKD",
@@ -1190,7 +1190,7 @@ func Test_HasWithIdx(t *testing.T) {
 	})
 
 	ultraTable.Add(Order{
-		ID:        `order_5`,
+		ID:        "order_5",
 		Account:   "1002",
 		StockCode: "700",
 		Currency:  "HKD",
@@ -1198,53 +1198,293 @@ func Test_HasWithIdx(t *testing.T) {
 	})
 
 	Convey("HasWithIdx", t, func() {
-		So(ultraTable.HasWithIdx(`ID`, `order_1`), ShouldBeTrue)
+		So(ultraTable.HasWithIdx(`ID`, "order_1"), ShouldBeTrue)
 		So(ultraTable.HasWithIdx(`Account`, `1002`), ShouldBeTrue)
 		So(ultraTable.HasWithIdx(`Account`, `1003`), ShouldBeFalse)
 		So(ultraTable.HasWithIdx(`Currency`, `HKD`), ShouldBeFalse)
 	})
 	Convey("GetWithIdxCount", t, func() {
-		So(ultraTable.GetWithIdxCount(`ID`, `order_1`), ShouldEqual, 1)
+		So(ultraTable.GetWithIdxCount(`ID`, "order_1"), ShouldEqual, 1)
 		So(ultraTable.GetWithIdxCount(`Account`, `1002`), ShouldEqual, 3)
 		So(ultraTable.GetWithIdxCount(`Account`, `1003`), ShouldEqual, 0)
 		So(ultraTable.GetWithIdxCount(`Currency`, `HKD`), ShouldEqual, 0)
 	})
 	Convey("GetWithIdxAggregateCount", t, func() {
 		So(ultraTable.GetWithIdxAggregateCount(map[string]interface{}{
-			`ID`:      `order_1`,
+			`ID`:      "order_1",
 			`Account`: `1001`,
 		}), ShouldEqual, 2)
 		So(ultraTable.GetWithIdxAggregateCount(map[string]interface{}{
-			`ID`:      `order_2`,
+			`ID`:      "order_2",
 			`Account`: `1001`,
 		}), ShouldEqual, 2)
 		So(ultraTable.GetWithIdxAggregateCount(map[string]interface{}{
-			`ID`:      `order_6`,
+			`ID`:      "order_6",
 			`Account`: `1001`,
 		}), ShouldEqual, 2)
 
 		So(ultraTable.GetWithIdxAggregateCount(map[string]interface{}{
-			`ID`:      `order_6`,
+			`ID`:      "order_6",
 			`Account`: `1003`,
 		}), ShouldEqual, 0)
 	})
 	Convey("GetWithIdxIntersectionCount", t, func() {
 		So(ultraTable.GetWithIdxIntersectionCount(map[string]interface{}{
-			`ID`:      `order_1`,
+			`ID`:      "order_1",
 			`Account`: `1001`,
 		}), ShouldEqual, 1)
 		So(ultraTable.GetWithIdxIntersectionCount(map[string]interface{}{
-			`ID`:      `order_2`,
+			`ID`:      "order_2",
 			`Account`: `1002`,
 		}), ShouldEqual, 0)
 		So(ultraTable.GetWithIdxIntersectionCount(map[string]interface{}{
-			`ID`:      `order_6`,
+			`ID`:      "order_6",
 			`Account`: `1001`,
 		}), ShouldEqual, 0)
 
 		So(ultraTable.GetWithIdxIntersectionCount(map[string]interface{}{
-			`ID`:      `order_6`,
+			`ID`:      "order_6",
 			`Account`: `1003`,
 		}), ShouldEqual, 0)
 	})
+}
+
+func Test_Transaction(t *testing.T) {
+	Convey("Transaction", t, func() {
+		Convey("Add", func() {
+			type Order struct {
+				ID        string `idx:"normal"`
+				Account   string `idx:"normal"`
+				StockCode string `idx:"normal"`
+				Currency  string
+				Amount    float64
+			}
+			type AccountBalance struct {
+				Account  string `idx:"normal"`
+				Currency string `idx:"normal"`
+				Balance  float64
+				Frozen   float64
+			}
+			tx := Begin()
+			orderTable := NewUltraTable()
+			accountBalanceTable := NewUltraTable()
+
+			err := tx.Add(orderTable, Order{
+				ID:        "order_1",
+				Account:   "1001",
+				StockCode: "700",
+				Currency:  "HKD",
+				Amount:    500.1,
+			})
+			So(err, ShouldBeNil)
+
+			err = tx.Add(accountBalanceTable, AccountBalance{
+				Account:  "1001",
+				Currency: "HKD",
+				Balance:  1000,
+				Frozen:   500.1,
+			})
+			So(err, ShouldBeNil)
+			tx.Commit()
+
+			So(orderTable.Len(), ShouldEqual, 1)
+			So(accountBalanceTable.Len(), ShouldEqual, 1)
+
+			err = tx.Add(orderTable, Order{
+				ID:        "order_1",
+				Account:   "1001",
+				StockCode: "700",
+				Currency:  "HKD",
+				Amount:    500.1,
+			})
+			So(err, ShouldBeNil)
+
+			err = tx.Add(accountBalanceTable, AccountBalance{
+				Account:  "1001",
+				Currency: "HKD",
+				Balance:  1000,
+				Frozen:   500.1,
+			})
+			So(err, ShouldBeNil)
+			tx.Rollback()
+
+			So(orderTable.Len(), ShouldEqual, 1)
+			So(accountBalanceTable.Len(), ShouldEqual, 1)
+
+			err = tx.Add(orderTable, Order{
+				ID:        "order_1",
+				Account:   "1001",
+				StockCode: "700",
+				Currency:  "HKD",
+				Amount:    500.1,
+			})
+			So(err, ShouldBeNil)
+			if err != nil {
+				tx.Rollback()
+			}
+
+			err = tx.Add(accountBalanceTable, AccountBalance{
+				Account:  "1001",
+				Currency: "HKD",
+				Balance:  1000,
+				Frozen:   500.1,
+			})
+			So(err, ShouldBeNil)
+			if err != nil {
+				tx.Rollback()
+			}
+
+			err = tx.Add(accountBalanceTable, nil)
+			So(err, ShouldNotBeNil)
+			if err != nil {
+				tx.Rollback()
+			}
+			So(orderTable.Len(), ShouldEqual, 1)
+			So(accountBalanceTable.Len(), ShouldEqual, 1)
+
+			for i := 0; i < 100; i++ {
+				err = tx.Add(orderTable, Order{
+					ID:        "order_1",
+					Account:   "1001",
+					StockCode: "700",
+					Currency:  "HKD",
+					Amount:    float64(i),
+				})
+				So(err, ShouldBeNil)
+			}
+			tx.Rollback()
+			So(orderTable.Len(), ShouldEqual, 1)
+			So(accountBalanceTable.Len(), ShouldEqual, 1)
+		})
+		Convey("Update", func() {
+			type Order struct {
+				ID        string `idx:"normal"`
+				Account   string `idx:"normal"`
+				StockCode string `idx:"normal"`
+				Currency  string
+				Amount    float64
+			}
+			type AccountBalance struct {
+				Account  string `idx:"normal"`
+				Currency string `idx:"normal"`
+				Balance  float64
+				Frozen   float64
+			}
+			tx := Begin()
+			orderTable := NewUltraTable()
+			accountBalanceTable := NewUltraTable()
+
+			for i := 0; i < 100; i++ {
+				err := tx.Add(orderTable, Order{
+					ID:        "order_1",
+					Account:   fmt.Sprint(i),
+					StockCode: "700",
+					Currency:  "HKD",
+					Amount:    float64(i),
+				})
+				So(err, ShouldBeNil)
+
+				err = tx.Add(accountBalanceTable, AccountBalance{
+					Account:  fmt.Sprint(i),
+					Currency: "HKD",
+					Balance:  100000,
+					Frozen:   float64(i),
+				})
+				So(err, ShouldBeNil)
+			}
+			tx.Commit()
+			So(orderTable.Len(), ShouldEqual, 100)
+			So(accountBalanceTable.Len(), ShouldEqual, 100)
+
+			tx = Begin()
+			count := tx.UpdateWithIdx(orderTable, "Account", "50", Order{
+				ID:        "order_1",
+				Account:   "50",
+				StockCode: "700",
+				Currency:  "HKD",
+				Amount:    0,
+			})
+			So(count, ShouldEqual, 1)
+			count = tx.UpdateWithIdx(accountBalanceTable, "Account", "50", AccountBalance{
+				Account:  "50",
+				Currency: "HKD",
+				Balance:  100000,
+				Frozen:   0,
+			})
+			So(count, ShouldEqual, 1)
+
+			results, _ := orderTable.GetWithIdx("Account", "50")
+			So(len(results), ShouldEqual, 1)
+			So(results[0].(Order).Amount, ShouldEqual, 0)
+			results, _ = accountBalanceTable.GetWithIdx("Account", "50")
+			So(len(results), ShouldEqual, 1)
+			So(results[0].(AccountBalance).Frozen, ShouldEqual, 0)
+			tx.Rollback()
+
+			results, _ = orderTable.GetWithIdx("Account", "50")
+			So(len(results), ShouldEqual, 1)
+			So(results[0].(Order).Amount, ShouldEqual, 50)
+			results, _ = accountBalanceTable.GetWithIdx("Account", "50")
+			So(len(results), ShouldEqual, 1)
+			So(results[0].(AccountBalance).Frozen, ShouldEqual, 50)
+		})
+		Convey("Delete", func() {
+			type Order struct {
+				ID        string `idx:"normal"`
+				Account   string `idx:"normal"`
+				StockCode string `idx:"normal"`
+				Currency  string
+				Amount    float64
+			}
+			type AccountBalance struct {
+				Account  string `idx:"normal"`
+				Currency string `idx:"normal"`
+				Balance  float64
+				Frozen   float64
+			}
+			tx := Begin()
+			orderTable := NewUltraTable()
+			accountBalanceTable := NewUltraTable()
+
+			for i := 0; i < 100; i++ {
+				err := tx.Add(orderTable, Order{
+					ID:        "order_1",
+					Account:   fmt.Sprint(i),
+					StockCode: "700",
+					Currency:  "HKD",
+					Amount:    float64(i),
+				})
+				So(err, ShouldBeNil)
+
+				err = tx.Add(accountBalanceTable, AccountBalance{
+					Account:  fmt.Sprint(i),
+					Currency: "HKD",
+					Balance:  100000,
+					Frozen:   float64(i),
+				})
+				So(err, ShouldBeNil)
+			}
+			tx.Commit()
+			So(orderTable.Len(), ShouldEqual, 100)
+			So(accountBalanceTable.Len(), ShouldEqual, 100)
+
+			tx = Begin()
+			count := tx.RemoveWithIdx(orderTable, "Account", "50")
+			So(count, ShouldEqual, 1)
+			count = tx.RemoveWithIdx(accountBalanceTable, "Account", "50")
+			So(count, ShouldEqual, 1)
+			results, _ := orderTable.GetWithIdx("Account", "50")
+			So(len(results), ShouldEqual, 0)
+			results, _ = accountBalanceTable.GetWithIdx("Account", "50")
+			So(len(results), ShouldEqual, 0)
+			tx.Rollback()
+			results, _ = orderTable.GetWithIdx("Account", "50")
+			So(len(results), ShouldEqual, 1)
+			So(results[0].(Order).Amount, ShouldEqual, 50)
+			results, _ = accountBalanceTable.GetWithIdx("Account", "50")
+			So(len(results), ShouldEqual, 1)
+			So(results[0].(AccountBalance).Frozen, ShouldEqual, 50)
+		})
+	})
+
 }
