@@ -15,7 +15,7 @@ const (
 type transLog struct {
 	transType  TransType
 	ultraTable *UltraTable
-	arryIndex  uint64
+	arryIndex  int
 	olds       []interface{}
 
 	idxKey string
@@ -29,13 +29,13 @@ func (p *transLog) Rollback() {
 	case INSERT:
 		p.ultraTable.removeWithTransition(p.arryIndex)
 	case DELETE:
-		for _, v := range p.olds {
-			p.ultraTable.add(v)
+		for i := 0; i < len(p.olds); i++ {
+			p.ultraTable.add(p.olds[i])
 		}
 	case UPDATE:
 		p.ultraTable.removeWithIdx(p.idxKey, p.vKey)
-		for _, v := range p.olds {
-			p.ultraTable.add(v)
+		for i := 0; i < len(p.olds); i++ {
+			p.ultraTable.add(p.olds[i])
 		}
 	}
 }
@@ -72,7 +72,7 @@ func (t *Transaction) Add(ultraTable *UltraTable, dest interface{}) error {
 	})
 	return nil
 }
-func (t *Transaction) RemoveWithIdx(ultraTable *UltraTable, idxKey string, vKey interface{}) uint64 {
+func (t *Transaction) RemoveWithIdx(ultraTable *UltraTable, idxKey string, vKey interface{}) int {
 	ultraTable.Lock()
 	defer ultraTable.Unlock()
 
@@ -92,7 +92,7 @@ func (t *Transaction) RemoveWithIdx(ultraTable *UltraTable, idxKey string, vKey 
 	return count
 }
 
-func (t *Transaction) UpdateWithIdx(ultraTable *UltraTable, idxKey string, vKey interface{}, newDest interface{}) uint64 {
+func (t *Transaction) UpdateWithIdx(ultraTable *UltraTable, idxKey string, vKey interface{}, newDest interface{}) int {
 	ultraTable.Lock()
 	defer ultraTable.Unlock()
 

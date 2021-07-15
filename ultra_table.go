@@ -58,20 +58,20 @@ func (u *UltraTable) Add(dest interface{}) error {
 }
 
 //Get benchmark performance near O(n), it is recommended to use GetWithIdx
-func (u *UltraTable) Remove(iterator ItemIterator) uint64 {
+func (u *UltraTable) Remove(iterator ItemIterator) int {
 	u.mu.Lock()
 	defer u.mu.Unlock()
 	return u.remove(iterator)
 }
 
 //RemoveWithIdx benchmark performance near O(1)
-func (u *UltraTable) RemoveWithIdx(idxKey string, vKey interface{}) uint64 {
+func (u *UltraTable) RemoveWithIdx(idxKey string, vKey interface{}) int {
 	u.mu.Lock()
 	defer u.mu.Unlock()
 	return u.removeWithIdx(idxKey, vKey)
 }
 
-func (u *UltraTable) UpdateWithIdx(idxKey string, vKey interface{}, newDest interface{}) uint64 {
+func (u *UltraTable) UpdateWithIdx(idxKey string, vKey interface{}, newDest interface{}) int {
 	u.mu.Lock()
 	defer u.mu.Unlock()
 
@@ -79,7 +79,7 @@ func (u *UltraTable) UpdateWithIdx(idxKey string, vKey interface{}, newDest inte
 }
 
 //SaveWithIdx update or insert
-func (u *UltraTable) SaveWithIdx(idxKey string, vKey interface{}, newDest interface{}) uint64 {
+func (u *UltraTable) SaveWithIdx(idxKey string, vKey interface{}, newDest interface{}) int {
 	u.mu.Lock()
 	defer u.mu.Unlock()
 	if u.hasWithIdx(idxKey, vKey) {
@@ -93,13 +93,13 @@ func (u *UltraTable) SaveWithIdx(idxKey string, vKey interface{}, newDest interf
 	}
 }
 
-func (u *UltraTable) SaveWithIdxAggregate(conditions map[string]interface{}, newDest interface{}) uint64 {
+func (u *UltraTable) SaveWithIdxAggregate(conditions map[string]interface{}, newDest interface{}) int {
 	u.mu.RLock()
 	defer u.mu.RUnlock()
 	return u.saveWithIdxAggregate(conditions, newDest)
 }
 
-func (u *UltraTable) SaveWithIdxIntersection(conditions map[string]interface{}, newDest interface{}) uint64 {
+func (u *UltraTable) SaveWithIdxIntersection(conditions map[string]interface{}, newDest interface{}) int {
 	u.mu.RLock()
 	defer u.mu.RUnlock()
 	return u.saveWithIdxIntersection(conditions, newDest)
@@ -145,16 +145,16 @@ func (u *UltraTable) Clear() {
 	u.clear()
 }
 
-func (u *UltraTable) Len() uint64 {
+func (u *UltraTable) Len() int {
 	u.mu.RLock()
 	defer u.mu.RUnlock()
 	return u.len()
 }
 
-func (u *UltraTable) Cap() uint64 {
+func (u *UltraTable) Cap() int {
 	u.mu.RLock()
 	defer u.mu.RUnlock()
-	return uint64(len(u.table))
+	return int(len(u.table))
 }
 
 func (u *UltraTable) Has(iterator ItemIterator) bool {
@@ -169,26 +169,26 @@ func (u *UltraTable) HasWithIdx(idxKey string, vKey interface{}) bool {
 	return u.hasWithIdx(idxKey, vKey)
 }
 
-func (u *UltraTable) GetWithIdxCount(idxKey string, vKey interface{}) uint64 {
+func (u *UltraTable) GetWithIdxCount(idxKey string, vKey interface{}) int {
 	u.mu.RLock()
 	defer u.mu.RUnlock()
 	return u.getWithIdxCount(idxKey, vKey)
 }
-func (u *UltraTable) GetWithIdxAggregateCount(conditions map[string]interface{}) uint64 {
+func (u *UltraTable) GetWithIdxAggregateCount(conditions map[string]interface{}) int {
 	u.mu.RLock()
 	defer u.mu.RUnlock()
 
 	return u.getWithIdxAggregateCount(conditions)
 }
 
-func (u *UltraTable) GetWithIdxIntersectionCount(conditions map[string]interface{}) uint64 {
+func (u *UltraTable) GetWithIdxIntersectionCount(conditions map[string]interface{}) int {
 	u.mu.RLock()
 	defer u.mu.RUnlock()
 
 	return u.getWithIdxIntersectionCount(conditions)
 }
 
-func (u *UltraTable) getWithIdxCount(idxKey string, vKey interface{}) uint64 {
+func (u *UltraTable) getWithIdxCount(idxKey string, vKey interface{}) int {
 
 	index, ok := u.indexGroup.indexItems[idxKey]
 	if !ok {
@@ -201,7 +201,7 @@ func (u *UltraTable) getWithIdxCount(idxKey string, vKey interface{}) uint64 {
 	return bitMap.Length()
 }
 
-func (u *UltraTable) getWithIdxIntersectionCount(conditions map[string]interface{}) uint64 {
+func (u *UltraTable) getWithIdxIntersectionCount(conditions map[string]interface{}) int {
 	intersectionList := []*BitMap{}
 	minLen := 0
 	minLenIndex := 0
@@ -229,7 +229,7 @@ func (u *UltraTable) getWithIdxIntersectionCount(conditions map[string]interface
 		return 0
 	}
 
-	tempMap := map[uint32]uint64{}
+	tempMap := map[uint32]int{}
 
 	intersectionList[minLenIndex].Iterator(func(k uint32) {
 		tempMap[k] = 1
@@ -244,14 +244,14 @@ func (u *UltraTable) getWithIdxIntersectionCount(conditions map[string]interface
 	})
 	count := 0
 	for _, v := range tempMap {
-		if v == uint64(len(intersectionList)) {
+		if v == int(len(intersectionList)) {
 			count++
 		}
 	}
-	return uint64(count)
+	return int(count)
 }
 
-func (u *UltraTable) getWithIdxAggregateCount(conditions map[string]interface{}) uint64 {
+func (u *UltraTable) getWithIdxAggregateCount(conditions map[string]interface{}) int {
 
 	aggregateList := []*BitMap{}
 
@@ -282,7 +282,7 @@ func (u *UltraTable) getWithIdxAggregateCount(conditions map[string]interface{})
 		})
 	}
 
-	return uint64(len(tempMap))
+	return int(len(tempMap))
 }
 
 func (u *UltraTable) removeIndex(idx uint32, dest interface{}) {
@@ -360,8 +360,8 @@ func (u *UltraTable) hasWithIdx(idxKey string, vKey interface{}) bool {
 	return ok
 }
 
-func (u *UltraTable) len() uint64 {
-	return uint64(len(u.table) - int(u.emptyMap.Length()))
+func (u *UltraTable) len() int {
+	return int(len(u.table) - int(u.emptyMap.Length()))
 }
 
 func (u *UltraTable) has(iterator ItemIterator) bool {
@@ -397,8 +397,8 @@ func (u *UltraTable) add(dest interface{}) error {
 	return nil
 }
 
-func (u *UltraTable) remove(iterator ItemIterator) uint64 {
-	var count uint64
+func (u *UltraTable) remove(iterator ItemIterator) int {
+	var count int
 	for i := 0; i < len(u.table); i++ {
 		if u.table[i] == nil {
 			continue
@@ -413,7 +413,7 @@ func (u *UltraTable) remove(iterator ItemIterator) uint64 {
 	return count
 }
 
-func (u *UltraTable) addWithTransition(dest interface{}) (uint64, error) {
+func (u *UltraTable) addWithTransition(dest interface{}) (int, error) {
 	if u.emptyMap.Length() == 0 {
 		err := u.addIndex(dest, uint32(len(u.table)))
 		if err != nil {
@@ -429,11 +429,11 @@ func (u *UltraTable) addWithTransition(dest interface{}) (uint64, error) {
 		}
 		u.table[i] = dest
 		u.emptyMap.Remove(i)
-		return uint64(i), nil
+		return int(i), nil
 	}
 }
 
-func (u *UltraTable) removeWithTransition(arryIndex uint64) {
+func (u *UltraTable) removeWithTransition(arryIndex int) {
 
 	if u.table[arryIndex] == nil {
 		return
@@ -443,7 +443,7 @@ func (u *UltraTable) removeWithTransition(arryIndex uint64) {
 	u.emptyMap.Add(uint32(arryIndex))
 }
 
-func (u *UltraTable) removeWithIdx(idxKey string, vKey interface{}) uint64 {
+func (u *UltraTable) removeWithIdx(idxKey string, vKey interface{}) int {
 	index, ok := u.indexGroup.indexItems[idxKey]
 	if !ok {
 		return 0
@@ -452,7 +452,7 @@ func (u *UltraTable) removeWithIdx(idxKey string, vKey interface{}) uint64 {
 	if !ok {
 		return 0
 	}
-	count := uint64(0)
+	count := int(0)
 	index[vKey].CloneIterator(func(k uint32) {
 		u.removeIndex(k, u.table[k])
 		u.table[k] = nil
@@ -462,7 +462,7 @@ func (u *UltraTable) removeWithIdx(idxKey string, vKey interface{}) uint64 {
 	return count
 }
 
-func (u *UltraTable) updateWithIdx(idxKey string, vKey interface{}, newDest interface{}) uint64 {
+func (u *UltraTable) updateWithIdx(idxKey string, vKey interface{}, newDest interface{}) int {
 
 	index, ok := u.indexGroup.indexItems[idxKey]
 	if !ok {
@@ -486,7 +486,7 @@ func (u *UltraTable) updateWithIdx(idxKey string, vKey interface{}, newDest inte
 		u.addIndex(newDest, j)
 		u.emptyMap.Remove(j)
 	}
-	return uint64(count)
+	return int(count)
 }
 
 func (u *UltraTable) getWithIdx(idxKey string, vKey interface{}) ([]interface{}, error) {
@@ -571,7 +571,7 @@ func (u *UltraTable) getWithIdxIntersection(conditions map[string]interface{}) (
 	}
 
 	var result []interface{}
-	tempMap := map[uint32]uint64{}
+	tempMap := map[uint32]int{}
 
 	intersectionList[minLenIndex].Iterator(func(k uint32) {
 		tempMap[k] = 1
@@ -587,7 +587,7 @@ func (u *UltraTable) getWithIdxIntersection(conditions map[string]interface{}) (
 	})
 
 	for k, v := range tempMap {
-		if v == uint64(len(intersectionList)) {
+		if v == int(len(intersectionList)) {
 			result = append(result, u.table[k])
 		}
 	}
@@ -613,9 +613,8 @@ func (u *UltraTable) getWithIdxAggregate(conditions map[string]interface{}) ([]i
 	}
 
 	tempMap := map[uint32]uint8{}
-
-	for _, aggregateSlice := range aggregateList {
-		aggregateSlice.Iterator(func(index uint32) {
+	for i := 0; i < len(aggregateList); i++ {
+		aggregateList[i].Iterator(func(index uint32) {
 			_, ok := tempMap[index]
 			if ok {
 				return
@@ -632,7 +631,7 @@ func (u *UltraTable) getWithIdxAggregate(conditions map[string]interface{}) ([]i
 	return result, nil
 }
 
-func (u *UltraTable) saveWithIdxIntersection(conditions map[string]interface{}, newDest interface{}) uint64 {
+func (u *UltraTable) saveWithIdxIntersection(conditions map[string]interface{}, newDest interface{}) int {
 
 	intersectionList := []*BitMap{}
 
@@ -662,7 +661,7 @@ func (u *UltraTable) saveWithIdxIntersection(conditions map[string]interface{}, 
 		}
 	}
 
-	tempMap := map[uint32]uint64{}
+	tempMap := map[uint32]int{}
 	if len(intersectionList) >= minLenIndex+1 && intersectionList[minLenIndex] != nil {
 		intersectionList[minLenIndex].Iterator(func(k uint32) {
 			tempMap[k] = 1
@@ -679,7 +678,7 @@ func (u *UltraTable) saveWithIdxIntersection(conditions map[string]interface{}, 
 	isReplace := false
 	count := 0
 	for k, v := range tempMap {
-		if v == uint64(len(intersectionList)) {
+		if v == int(len(intersectionList)) {
 			u.removeIndex(uint32(k), u.table[k])
 			u.table[k] = newDest
 			u.addIndex(newDest, k)
@@ -705,11 +704,11 @@ func (u *UltraTable) saveWithIdxIntersection(conditions map[string]interface{}, 
 		}
 		return 1
 	} else {
-		return uint64(count)
+		return int(count)
 	}
 }
 
-func (u *UltraTable) saveWithIdxAggregate(conditions map[string]interface{}, newDest interface{}) uint64 {
+func (u *UltraTable) saveWithIdxAggregate(conditions map[string]interface{}, newDest interface{}) int {
 
 	aggregateList := []*BitMap{}
 
@@ -743,10 +742,9 @@ func (u *UltraTable) saveWithIdxAggregate(conditions map[string]interface{}, new
 		return 1
 	}
 
-	tempMap := map[uint32]uint64{}
-
-	for _, aggregateSlice := range aggregateList {
-		aggregateSlice.Iterator(func(index uint32) {
+	tempMap := map[uint32]int{}
+	for i := 0; i < len(aggregateList); i++ {
+		aggregateList[i].Iterator(func(index uint32) {
 			_, ok := tempMap[index]
 			if ok {
 				return
@@ -759,5 +757,5 @@ func (u *UltraTable) saveWithIdxAggregate(conditions map[string]interface{}, new
 		u.table[k] = newDest
 		u.addIndex(newDest, k)
 	}
-	return uint64(len(tempMap))
+	return int(len(tempMap))
 }

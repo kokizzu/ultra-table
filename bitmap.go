@@ -44,8 +44,8 @@ func (b *BitMap) IsExist(num uint32) bool {
 	return b.Bitmap.Contains(num)
 }
 
-func (b *BitMap) Length() uint64 {
-	return b.Bitmap.GetCardinality()
+func (b *BitMap) Length() int {
+	return int(b.Bitmap.GetCardinality())
 }
 
 func (b *BitMap) Remove(num uint32) {
