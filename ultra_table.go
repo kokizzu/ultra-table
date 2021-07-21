@@ -509,7 +509,7 @@ func (u *UltraTable) getWithIdx(idxKey string, vKey interface{}) ([]interface{},
 
 func (u *UltraTable) clear() {
 	u.table = make([]interface{}, 0)
-	u.indexGroup = IndexGroup{indexItems: map[string]map[interface{}]*BitMap{}}
+	u.indexGroup = IndexGroup{indexItems: map[string]map[interface{}]*BitMap{}, indexTags: map[string]*tag{}}
 	u.emptyMap.Clear()
 }
 

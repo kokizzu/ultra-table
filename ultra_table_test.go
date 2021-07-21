@@ -374,6 +374,18 @@ func Test_Clear(t *testing.T) {
 		ultraTable.Clear()
 		So(ultraTable.Len(), ShouldEqual, 0)
 		So(ultraTable.Cap(), ShouldEqual, 0)
+
+		for i := 0; i < 10000; i++ {
+			ultraTable.Add(Order{
+				ID:        fmt.Sprint(i),
+				Account:   "1001",
+				StockCode: "700",
+				Currency:  "HKD",
+				Amount:    500.1,
+			})
+		}
+		So(ultraTable.Len(), ShouldEqual, 10000)
+		So(ultraTable.Cap(), ShouldEqual, 10000)
 	})
 }
 
