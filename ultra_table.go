@@ -23,6 +23,10 @@ type IndexGroup struct {
 	indexTags  map[string]*tag
 }
 
+func newIndexGroup() IndexGroup {
+	return IndexGroup{indexItems: map[string]map[interface{}]*BitMap{}, indexTags: map[string]*tag{}}
+}
+
 func (indexGroup *IndexGroup) IndexTagLen() int {
 	return len(indexGroup.indexTags)
 }
@@ -39,7 +43,7 @@ type UltraTable struct {
 func NewUltraTable() *UltraTable {
 	return &UltraTable{
 		table:      make([]interface{}, 0),
-		indexGroup: IndexGroup{indexItems: map[string]map[interface{}]*BitMap{}, indexTags: map[string]*tag{}},
+		indexGroup: newIndexGroup(),
 		emptyMap:   NewBitMap(),
 	}
 }
@@ -509,7 +513,7 @@ func (u *UltraTable) getWithIdx(idxKey string, vKey interface{}) ([]interface{},
 
 func (u *UltraTable) clear() {
 	u.table = make([]interface{}, 0)
-	u.indexGroup = IndexGroup{indexItems: map[string]map[interface{}]*BitMap{}, indexTags: map[string]*tag{}}
+	u.indexGroup = newIndexGroup()
 	u.emptyMap.Clear()
 }
 
