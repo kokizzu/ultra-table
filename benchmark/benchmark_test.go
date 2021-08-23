@@ -3,6 +3,7 @@ package benchmark
 import (
 	"fmt"
 	"math/rand"
+	"sync"
 	"testing"
 	"time"
 
@@ -284,6 +285,54 @@ func BenchmarkCoverGet(b *testing.B) {
 			b.Fatal(err)
 		}
 		if len(r) == 0 {
+			b.Fail()
+		}
+	}
+}
+
+func BenchmarkConcurrent(b *testing.B) {
+	b.StopTimer()
+
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+
+		waitGroup := sync.WaitGroup{}
+		waitGroup.Add(30)
+
+		ultraTable := ultra_table.NewUltraTable()
+		for i := 0; i < 10; i++ {
+			go func() {
+				ultraTable.Add(Order{
+					ID:        i,
+					Account:   `a`,
+					StockCode: `700`,
+					Currency:  `HKD`,
+					Amount:    100,
+				})
+				waitGroup.Done()
+			}()
+		}
+		for i := 0; i < 10; i++ {
+			go func() {
+				ultraTable.UpdateWithIdx(`ID`, i, Order{
+					ID:        i,
+					Account:   `a1`,
+					StockCode: `800`,
+					Currency:  `USD`,
+					Amount:    100,
+				})
+				waitGroup.Done()
+			}()
+		}
+
+		for i := 0; i < 10; i++ {
+			go func() {
+				ultraTable.GetWithIdx("ID", i)
+				waitGroup.Done()
+			}()
+		}
+		waitGroup.Wait()
+		if ultraTable.Len() != 10 {
 			b.Fail()
 		}
 	}
