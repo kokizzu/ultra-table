@@ -1500,3 +1500,216 @@ func Test_Transaction(t *testing.T) {
 	})
 
 }
+
+func Test_Copy(t *testing.T) {
+	Convey("copy", t, func() {
+		type Order struct {
+			ID        string `idx:"normal"`
+			Account   string `idx:"normal"`
+			StockCode string `idx:"normal"`
+			Currency  string
+			Amount    float64
+		}
+
+		ultraTable := NewUltraTable()
+		order := Order{
+			ID:        "1",
+			Account:   "1001",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    100.1,
+		}
+
+		ultraTable.Add(order)
+		fmt.Printf("%p \r\n", &order)
+
+		dest, _ := ultraTable.GetWithIdx("ID", "1")
+
+		orderBefore := dest[0].(Order)
+		orderBefore.Amount = 100.2
+
+		fmt.Printf("%p \r\n", &orderBefore)
+
+		dest, _ = ultraTable.GetWithIdx("ID", "1")
+		So(dest[0].(Order).Amount, ShouldEqual, 100.1)
+
+		fmt.Printf("%p \r\n", &dest[0])
+
+	})
+}
+
+func Test_RemoveWithIdxIntersection(t *testing.T) {
+	Convey("RemoveWithIdxIntersection", t, func() {
+		type Order struct {
+			ID        string `idx:"normal"`
+			Account   string `idx:"normal"`
+			StockCode string `idx:"normal"`
+			Currency  string
+			Amount    float64
+		}
+		ultraTable := NewUltraTable()
+
+		ultraTable.Add(Order{
+			ID:        "1",
+			Account:   "1001",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    55000,
+		})
+		ultraTable.Add(Order{
+			ID:        "1",
+			Account:   "1002",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    55000,
+		})
+		ultraTable.Add(Order{
+			ID:        "1",
+			Account:   "1002",
+			StockCode: "800",
+			Currency:  "HKD",
+			Amount:    55000,
+		})
+
+		ultraTable.Add(Order{
+			ID:        "1",
+			Account:   "1003",
+			StockCode: "800",
+			Currency:  "HKD",
+			Amount:    55000,
+		})
+		ultraTable.Add(Order{
+			ID:        "1",
+			Account:   "1004",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    55000,
+		})
+
+		count := ultraTable.RemoveWithIdxIntersection(map[string]interface{}{
+			"Account":   "1001",
+			"StockCode": "800",
+		})
+		So(count, ShouldEqual, 0)
+		So(ultraTable.Len(), ShouldEqual, 5)
+
+		count = ultraTable.RemoveWithIdxIntersection(map[string]interface{}{
+			"Account":   "1002",
+			"StockCode": "700",
+		})
+		So(count, ShouldEqual, 1)
+		So(ultraTable.Len(), ShouldEqual, 4)
+
+		count = ultraTable.RemoveWithIdxIntersection(map[string]interface{}{
+			"StockCode": "700",
+		})
+		So(count, ShouldEqual, 2)
+		So(ultraTable.Len(), ShouldEqual, 2)
+
+		count = ultraTable.RemoveWithIdxIntersection(map[string]interface{}{
+			"Account": "1003",
+		})
+		So(count, ShouldEqual, 1)
+		So(ultraTable.Len(), ShouldEqual, 1)
+
+		count = ultraTable.RemoveWithIdxIntersection(map[string]interface{}{
+			"Account":   "1002",
+			"ID":        "1",
+			"StockCode": "800",
+		})
+		So(count, ShouldEqual, 1)
+		So(ultraTable.Len(), ShouldEqual, 0)
+
+		count = ultraTable.RemoveWithIdxIntersection(map[string]interface{}{})
+		So(count, ShouldEqual, 0)
+		So(ultraTable.Len(), ShouldEqual, 0)
+	})
+}
+
+func Test_RemoveWithIdxAggregate(t *testing.T) {
+	Convey("RemoveWithIdxAggregate", t, func() {
+		type Order struct {
+			ID        string `idx:"normal"`
+			Account   string `idx:"normal"`
+			StockCode string `idx:"normal"`
+			Currency  string
+			Amount    float64
+		}
+		ultraTable := NewUltraTable()
+
+		ultraTable.Add(Order{
+			ID:        "1",
+			Account:   "1001",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    55000,
+		})
+		ultraTable.Add(Order{
+			ID:        "1",
+			Account:   "1002",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    55000,
+		})
+		ultraTable.Add(Order{
+			ID:        "1",
+			Account:   "1002",
+			StockCode: "800",
+			Currency:  "HKD",
+			Amount:    55000,
+		})
+
+		ultraTable.Add(Order{
+			ID:        "1",
+			Account:   "1003",
+			StockCode: "800",
+			Currency:  "HKD",
+			Amount:    55000,
+		})
+		ultraTable.Add(Order{
+			ID:        "1",
+			Account:   "1004",
+			StockCode: "700",
+			Currency:  "HKD",
+			Amount:    55000,
+		})
+
+		count := ultraTable.RemoveWithIdxAggregate(map[string]interface{}{
+			"Account":   "1005",
+			"StockCode": "600",
+		})
+		So(count, ShouldEqual, 0)
+		So(ultraTable.Len(), ShouldEqual, 5)
+
+		count = ultraTable.RemoveWithIdxAggregate(map[string]interface{}{
+			"Account":   "1002",
+			"StockCode": "700",
+		})
+		So(count, ShouldEqual, 4)
+		So(ultraTable.Len(), ShouldEqual, 1)
+
+		count = ultraTable.RemoveWithIdxAggregate(map[string]interface{}{
+			"StockCode": "700",
+		})
+		So(count, ShouldEqual, 0)
+		So(ultraTable.Len(), ShouldEqual, 1)
+
+		count = ultraTable.RemoveWithIdxAggregate(map[string]interface{}{
+			"Account": "1003",
+		})
+		So(count, ShouldEqual, 1)
+		So(ultraTable.Len(), ShouldEqual, 0)
+
+		count = ultraTable.RemoveWithIdxAggregate(map[string]interface{}{
+			"Account":   "1002",
+			"ID":        "1",
+			"StockCode": "800",
+		})
+		So(count, ShouldEqual, 0)
+		So(ultraTable.Len(), ShouldEqual, 0)
+
+		count = ultraTable.RemoveWithIdxAggregate(map[string]interface{}{})
+		So(count, ShouldEqual, 0)
+		So(ultraTable.Len(), ShouldEqual, 0)
+	})
+}
