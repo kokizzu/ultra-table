@@ -106,14 +106,14 @@ func (u *UltraTable) SaveWithIdx(idxKey string, vKey interface{}, newDest interf
 }
 
 func (u *UltraTable) SaveWithIdxAggregate(conditions map[string]interface{}, newDest interface{}) int {
-	u.mu.RLock()
-	defer u.mu.RUnlock()
+	u.mu.Lock()
+	defer u.mu.Unlock()
 	return u.saveWithIdxAggregate(conditions, newDest)
 }
 
 func (u *UltraTable) SaveWithIdxIntersection(conditions map[string]interface{}, newDest interface{}) int {
-	u.mu.RLock()
-	defer u.mu.RUnlock()
+	u.mu.Lock()
+	defer u.mu.Unlock()
 	return u.saveWithIdxIntersection(conditions, newDest)
 }
 
