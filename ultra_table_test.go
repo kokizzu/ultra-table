@@ -3,6 +3,7 @@ package ultra_table
 import (
 	"fmt"
 	"math/rand"
+	"sync"
 	"testing"
 	"time"
 
@@ -1711,5 +1712,88 @@ func Test_RemoveWithIdxAggregate(t *testing.T) {
 		count = ultraTable.RemoveWithIdxAggregate(map[string]interface{}{})
 		So(count, ShouldEqual, 0)
 		So(ultraTable.Len(), ShouldEqual, 0)
+	})
+}
+
+func Test_Concurrent(t *testing.T) {
+	Convey("Concurrent", t, func() {
+		type Order struct {
+			ID        int    `idx:"normal"`
+			Account   string `idx:"normal"`
+			StockCode string `idx:"normal"`
+			Currency  string
+			Amount    float64
+		}
+
+		Convey("Concurrent-1", func() {
+
+			waitGroup := sync.WaitGroup{}
+			len := 10
+			waitGroup.Add(len * 3)
+
+			ultraTable := NewUltraTable()
+			for i := 0; i < len; i++ {
+				go func() {
+					ultraTable.Add(Order{
+						ID:        i,
+						Account:   `a`,
+						StockCode: `700`,
+						Currency:  `HKD`,
+						Amount:    100,
+					})
+					waitGroup.Done()
+				}()
+			}
+			for i := 0; i < len; i++ {
+				go func() {
+					ultraTable.UpdateWithIdx(`ID`, i, Order{
+						ID:        i,
+						Account:   `a1`,
+						StockCode: `800`,
+						Currency:  `USD`,
+						Amount:    100,
+					})
+					waitGroup.Done()
+				}()
+			}
+
+			for i := 0; i < len; i++ {
+				go func() {
+					ultraTable.GetWithIdx("ID", i)
+					waitGroup.Done()
+				}()
+			}
+			waitGroup.Wait()
+			So(ultraTable.Len(), ShouldEqual, len)
+		})
+
+		Convey("Concurrent-Read-Write", func() {
+			waitGroup := sync.WaitGroup{}
+			len := 100
+			waitGroup.Add(len * 2)
+
+			ultraTable := NewUltraTable()
+			for i := 0; i < len; i++ {
+				go func() {
+					ultraTable.Add(Order{
+						ID:        i,
+						Account:   `a`,
+						StockCode: `700`,
+						Currency:  `HKD`,
+						Amount:    100,
+					})
+					waitGroup.Done()
+				}()
+			}
+
+			for i := 0; i < len; i++ {
+				go func() {
+					ultraTable.GetWithIdx("ID", i)
+					waitGroup.Done()
+				}()
+			}
+			waitGroup.Wait()
+			So(ultraTable.Len(), ShouldEqual, len)
+		})
 	})
 }
