@@ -603,6 +603,9 @@ func (u *UltraTable) getWithIdxIntersection(conditions map[string]interface{}) (
 			result = append(result, u.table[k])
 		}
 	}
+	if len(result) == 0 {
+		return nil, RecordNotFound
+	}
 	return result, nil
 }
 

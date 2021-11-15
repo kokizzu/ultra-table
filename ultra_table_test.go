@@ -186,7 +186,7 @@ func TestUslice(t *testing.T) {
 				"StockCode": "800",
 				"Currency":  "USD",
 			})
-			So(err, ShouldBeNil)
+			So(RecordNotFound == err, ShouldBeTrue)
 			So(len(list), ShouldEqual, 0)
 
 			list, err = Uslice.GetWithIdxIntersection(map[string]interface{}{
@@ -345,7 +345,7 @@ func TestUslice(t *testing.T) {
 				"Name": "d",
 				"Age":  20,
 			})
-			So(err, ShouldBeNil)
+			So(RecordNotFound == err, ShouldBeTrue)
 			So(len(list), ShouldEqual, 0)
 		})
 	})
