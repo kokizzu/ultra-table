@@ -1260,6 +1260,12 @@ func Test_HasWithIdx(t *testing.T) {
 			`Account`: `1003`,
 		}), ShouldEqual, 0)
 	})
+
+	Convey("revome", t, func() {
+		count := ultraTable.RemoveWithIdx("ID", "order_1")
+		So(count, ShouldEqual, 1)
+		So(ultraTable.HasWithIdx("ID", "order_1"), ShouldBeFalse)
+	})
 }
 
 func Test_Transaction(t *testing.T) {

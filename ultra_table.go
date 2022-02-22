@@ -368,8 +368,14 @@ func (u *UltraTable) hasWithIdx(idxKey string, vKey interface{}) bool {
 	if !ok {
 		return false
 	}
-	_, ok = index[vKey]
-	return ok
+	bitMap, ok := index[vKey]
+	if !ok {
+		return false
+	}
+	if bitMap.Length() == 0 {
+		return false
+	}
+	return true
 }
 
 func (u *UltraTable) len() int {
