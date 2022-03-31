@@ -305,6 +305,9 @@ func (u *UltraTable) removeIndex(idx uint32, dest interface{}) {
 			ptr0 := uintptr((*emptyInterface)(unsafe.Pointer(&dest)).word)
 			val := tag.GetPointerVal(unsafe.Pointer(ptr0 + tag.offset))
 			m[val].Remove(idx)
+			if m[val].Bitmap.IsEmpty() {
+				delete(m, val)
+			}
 		}
 	}
 }
