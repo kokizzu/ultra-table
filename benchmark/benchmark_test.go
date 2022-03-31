@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	ultra_table "github.com/longbridgeapp/ultra-table"
 )
 
@@ -335,6 +336,70 @@ func BenchmarkConcurrent(b *testing.B) {
 		if ultraTable.Len() != 10 {
 			b.Fail()
 		}
+	}
+}
+
+type IdempotentResponseBody struct {
+	IdempotentKey string `idx:"normal"`
+	TranctionTime int64  `idx:"normal"`
+	IsErr         bool
+	Body          []byte
+}
+
+func BenchmarkIdempotentCacheSize1(b *testing.B) {
+	ultraTable := ultra_table.NewUltraTable()
+	for i := 0; i < 200000; i++ {
+		rand.Seed(time.Now().UnixNano())
+		ultraTable.Add(IdempotentResponseBody{
+			IdempotentKey: uuid.New().String(),
+			TranctionTime: time.Now().Truncate(time.Hour * 24).Unix(),
+			IsErr:         false,
+			Body:          []byte("hello"),
+		})
+	}
+	expired_time := time.Now()
+	ultraTable.Remove(func(i interface{}) bool {
+		tranctionTime := time.Unix(i.(IdempotentResponseBody).TranctionTime, 0)
+		return expired_time.After(tranctionTime) || expired_time.Equal(tranctionTime)
+	})
+	if ultraTable.Len() != 0 {
+		b.Fail()
+	}
+}
+
+func BenchmarkIdempotentCacheSize2(b *testing.B) {
+	ultraTable := ultra_table.NewUltraTable()
+	for i := 0; i < 200000; i++ {
+		rand.Seed(time.Now().UnixNano())
+		ultraTable.Add(IdempotentResponseBody{
+			IdempotentKey: uuid.New().String(),
+			TranctionTime: time.Now().UnixMicro(),
+			IsErr:         false,
+			Body:          []byte("hello"),
+		})
+	}
+	if ultraTable.Len() != 200000 {
+		b.Fail()
+	}
+	expired_time := time.Now()
+	ultraTable.Remove(func(i interface{}) bool {
+		tranctionTime := time.UnixMicro(i.(IdempotentResponseBody).TranctionTime)
+		return expired_time.After(tranctionTime) || expired_time.Equal(tranctionTime)
+	})
+	if ultraTable.Len() != 0 {
+		b.Fail()
+	}
+	for i := 0; i < 200000; i++ {
+		rand.Seed(time.Now().UnixNano())
+		ultraTable.Add(IdempotentResponseBody{
+			IdempotentKey: uuid.New().String(),
+			TranctionTime: time.Now().UnixMicro(),
+			IsErr:         false,
+			Body:          []byte("hello"),
+		})
+	}
+	if ultraTable.Len() != 200000 {
+		b.Fail()
 	}
 }
 

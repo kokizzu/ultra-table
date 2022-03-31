@@ -94,7 +94,7 @@ func TestUslice(t *testing.T) {
 			})
 			So(len(results), ShouldEqual, 0)
 			results, err = Uslice.GetWithIdx("ID", "order_1")
-			So(err, ShouldBeNil)
+			So(err, ShouldNotBeNil)
 			So(len(results), ShouldEqual, 0)
 
 			results = Uslice.Get(func(i interface{}) bool {
@@ -102,7 +102,7 @@ func TestUslice(t *testing.T) {
 			})
 			So(len(results), ShouldEqual, 0)
 			results, err = Uslice.GetWithIdx("Account", "1001")
-			So(err, ShouldBeNil)
+			So(err, ShouldNotBeNil)
 			So(len(results), ShouldEqual, 0)
 
 			results = Uslice.Get(func(i interface{}) bool {
@@ -110,7 +110,7 @@ func TestUslice(t *testing.T) {
 			})
 			So(len(results), ShouldEqual, 0)
 			results, err = Uslice.GetWithIdx("StockCode", "700")
-			So(err, ShouldBeNil)
+			So(err, ShouldNotBeNil)
 			So(len(results), ShouldEqual, 0)
 		})
 		Convey("Have Index GetWithIdxIntersection", func() {
@@ -601,6 +601,53 @@ func Test_Remove(t *testing.T) {
 			}
 			So(ultraTable.Len(), ShouldEqual, 500)
 			So(ultraTable.Cap(), ShouldEqual, 500)
+		})
+		Convey("Remove-5", func() {
+			ultraTable := NewUltraTable()
+
+			for i := 0; i < 500; i++ {
+				rand.Seed(time.Now().UnixNano())
+				ultraTable.Add(Order{
+					ID:        fmt.Sprint(i),
+					Account:   "1001",
+					StockCode: fmt.Sprint(rand.Intn(1000)),
+					Currency:  "HKD",
+					Amount:    float64(i),
+					At:        time.Now().Add(-time.Hour),
+				})
+			}
+			So(ultraTable.Len(), ShouldEqual, 500)
+			So(ultraTable.Cap(), ShouldEqual, 500)
+			ultraTable.Remove(func(i interface{}) bool {
+				return i.(Order).At.Before(time.Now())
+			})
+			So(ultraTable.Len(), ShouldEqual, 0)
+			So(ultraTable.Cap(), ShouldEqual, 500)
+
+			ultraTable.Clear()
+
+			So(ultraTable.Len(), ShouldEqual, 0)
+			So(ultraTable.Cap(), ShouldEqual, 0)
+
+			for i := 0; i < 500; i++ {
+				rand.Seed(time.Now().UnixNano())
+				ultraTable.Add(Order{
+					ID:        fmt.Sprint(i),
+					Account:   "1001",
+					StockCode: fmt.Sprint(rand.Intn(1000)),
+					Currency:  "HKD",
+					Amount:    float64(i),
+					At:        time.Now().Add(-time.Hour),
+				})
+			}
+			So(ultraTable.Len(), ShouldEqual, 500)
+			So(ultraTable.Cap(), ShouldEqual, 500)
+
+			for i := 0; i < 500; i++ {
+				dests, err := ultraTable.GetWithIdx("ID", fmt.Sprint(i))
+				So(err, ShouldBeNil)
+				So(dests[0].(Order).ID, ShouldEqual, fmt.Sprint(i))
+			}
 		})
 	})
 }
