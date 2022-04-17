@@ -1,6 +1,3 @@
-# ultra_table is an implementation of memory table for Go
-=======
-
 ## Overview
 Ultra_table provides a possibility to quickly build an in-memory table, It has good performance and high scalability, The current version already supports serialization of gogoproto and easyjson, The most important thing is that he is based on the latest golang 1.18 implementation, which is the implementation of go generics.
 We try to apply sdk to internal applications.
