@@ -1,0 +1,21 @@
+syntax = "proto3";
+package pb;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.marshaler_all) = true;
+
+enum Gender{
+  men = 0;
+  women = 1;
+}
+
+message Person{
+  string name = 1[(gogoproto.moretags) = "idx:\"normal\""];
+  string phone=2[(gogoproto.moretags) = "idx:\"unique\""];
+  int32 age=3[(gogoproto.moretags) = "idx:\"normal\""];
+  int32 birthDay=4;
+  Gender gender=5;
+}
