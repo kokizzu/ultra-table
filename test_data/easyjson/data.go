@@ -16,3 +16,7 @@ func (person *Person) Marshal() (dAtA []byte, err error) {
 func (person *Person) Unmarshal(dAtA []byte) error {
 	return person.UnmarshalJSON(dAtA)
 }
+
+func (person *Person) DeepCp() *Person {
+	return &Person{}
+}

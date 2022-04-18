@@ -3,8 +3,9 @@ package ultra_table
 type item[T IRow] struct {
 	isDelete bool
 	buf      []byte
-	t        T
 }
+
+
 
 func newItem[T IRow](t T) (*item[T], error) {
 	buf, err := t.Marshal()
@@ -14,22 +15,20 @@ func newItem[T IRow](t T) (*item[T], error) {
 	return &item[T]{
 		isDelete: false,
 		buf:      buf,
-		t:        t,
 	}, nil
 }
 
 func (item *item[T]) Delete() {
 	item.isDelete = true
 	item.buf = nil
-	var t T
-	item.t = t
 }
 
 func (item *item[T]) IsDeleted() bool {
 	return item.isDelete
 }
 
-func (item *item[T]) GetItemValue() T {
-	item.t.Unmarshal(item.buf)
-	return item.t
+func (item *item[T]) GetItemValue(deepCp IDeepCp[T]) T {
+	t := deepCp.DeepCp()
+	t.Unmarshal(item.buf)
+	return t
 }

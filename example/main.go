@@ -10,11 +10,11 @@ import (
 
 func main() {
 	baseEasyjson() //serialization based easyjson
-	basegogo()     //serialization based gogo protobuf
+	//basegogo()     //serialization based gogo protobuf
 }
 
 func baseEasyjson() {
-	table := ultra_table.New[*easyjson.Person]()
+	table := ultra_table.New[*easyjson.Person](&easyjson.Person{})
 
 	err := table.Add(&easyjson.Person{
 		Name:     "jacky",
@@ -53,7 +53,7 @@ func baseEasyjson() {
 }
 
 func basegogo() {
-	table := ultra_table.New[*pb.Person]()
+	table := ultra_table.New[*pb.Person](&pb.Person{})
 
 	err := table.Add(&pb.Person{
 		Name:     "jacky",

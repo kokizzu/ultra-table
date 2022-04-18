@@ -11,20 +11,22 @@ type UltraTableV2[T IRow] struct {
 	emptyMap     *BitMap
 	table        []*item[T]
 	fieldIndexer *fieldIndexer
+	deepCp       IDeepCp[T]
 }
 
 //New ultraTable with generics
-func New[T IRow]() *UltraTableV2[T] {
+func New[T IRow](deepCp IDeepCp[T]) *UltraTableV2[T] {
 	ultraTable := &UltraTableV2[T]{
 		table:        make([]*item[T], 0),
 		fieldIndexer: newFieldIndexer(),
 		emptyMap:     NewBitMap(),
+		deepCp:       deepCp,
 	}
 	return ultraTable
 }
 
-func NewWithInitializeData[T IRow](ts []T) (*UltraTableV2[T], error) {
-	ultraTable := New[T]()
+func NewWithInitializeData[T IRow](ts []T, deepCp IDeepCp[T]) (*UltraTableV2[T], error) {
+	ultraTable := New(deepCp)
 	for i := 0; i < len(ts); i++ {
 		err := ultraTable.Add(ts[i])
 		if err != nil {
@@ -221,7 +223,7 @@ func (u *UltraTableV2[T]) remove(f iterator[T]) int {
 			continue
 		}
 
-		itemValue := u.table[i].GetItemValue()
+		itemValue := u.table[i].GetItemValue(u.deepCp)
 
 		if f(itemValue) {
 			u.fieldIndexer.removeIndex(uint32(i), itemValue)
@@ -241,7 +243,7 @@ func (u *UltraTableV2[T]) getAll() []T {
 			emptyInc++
 			continue
 		}
-		result[i-emptyInc] = u.table[i].GetItemValue()
+		result[i-emptyInc] = u.table[i].GetItemValue(u.deepCp)
 	}
 	return result
 }
@@ -252,7 +254,7 @@ func (u *UltraTableV2[T]) get(f iterator[T]) []T {
 		if u.table[i].IsDeleted() {
 			continue
 		}
-		itemValue := u.table[i].GetItemValue()
+		itemValue := u.table[i].GetItemValue(u.deepCp)
 		if f(itemValue) {
 			result = append(result, itemValue)
 		}
@@ -275,7 +277,7 @@ func (u *UltraTableV2[T]) getWithIdx(idxKey string, vKey interface{}) ([]T, erro
 		if !ok {
 			return nil, RecordNotFound
 		}
-		return []T{u.table[idx].GetItemValue()}, nil
+		return []T{u.table[idx].GetItemValue(u.deepCp)}, nil
 	}
 
 	if tag.CheckIsNormal() {
@@ -290,7 +292,7 @@ func (u *UltraTableV2[T]) getWithIdx(idxKey string, vKey interface{}) ([]T, erro
 		result := make([]T, list.Length())
 		count := 0
 		list.Iterator(func(k uint32) {
-			result[count] = u.table[k].GetItemValue()
+			result[count] = u.table[k].GetItemValue(u.deepCp)
 			count++
 		})
 		return result, nil
@@ -351,7 +353,7 @@ func (u *UltraTableV2[T]) getWithIdxIntersection(conditions map[string]interface
 
 	for k, v := range tempMap {
 		if v == int(len(intersectionList)) {
-			result = append(result, u.table[k].GetItemValue())
+			result = append(result, u.table[k].GetItemValue(u.deepCp))
 		}
 	}
 	return result, nil
@@ -442,7 +444,7 @@ func (u *UltraTableV2[T]) getWithIdxAggregate(conditions map[string]interface{})
 	result := make([]T, len(tempMap))
 	count := 0
 	for k := range tempMap {
-		result[count] = u.table[k].GetItemValue()
+		result[count] = u.table[k].GetItemValue(u.deepCp)
 		count++
 	}
 	return result, nil
@@ -485,7 +487,7 @@ func (u *UltraTableV2[T]) removeWithIdx(idxKey string, vKey interface{}) int {
 	}
 	count := int(0)
 	bitmap.CloneIterator(func(k uint32) {
-		u.fieldIndexer.removeIndex(k, u.table[k].GetItemValue())
+		u.fieldIndexer.removeIndex(k, u.table[k].GetItemValue(u.deepCp))
 		u.table[k].Delete()
 		u.emptyMap.Add(k)
 		count++
@@ -502,7 +504,7 @@ func (u *UltraTableV2[T]) has(f iterator[T]) bool {
 		if u.table[i].IsDeleted() {
 			continue
 		}
-		if f(u.table[i].GetItemValue()) {
+		if f(u.table[i].GetItemValue(u.deepCp)) {
 			return true
 		}
 	}
@@ -526,7 +528,7 @@ func (u *UltraTableV2[T]) updateWithUniqueIdx(idxKey string, vKey interface{}, t
 	if !ok {
 		return RecordNotFound
 	}
-	oldItem := u.table[idx].GetItemValue()
+	oldItem := u.table[idx].GetItemValue(u.deepCp)
 
 	if u.removeWithIdx(idxKey, vKey) == 1 {
 		if err := u.add(t); err != nil {
@@ -608,7 +610,7 @@ func (u *UltraTableV2[T]) removeWithIdxIntersection(conditions map[string]interf
 	count := 0
 	for k, v := range tempMap {
 		if v == int(len(intersectionList)) {
-			u.fieldIndexer.removeIndex(k, u.table[k].GetItemValue())
+			u.fieldIndexer.removeIndex(k, u.table[k].GetItemValue(u.deepCp))
 			u.table[k].Delete()
 			u.emptyMap.Add(k)
 			count++
@@ -641,7 +643,7 @@ func (u *UltraTableV2[T]) removeWithIdxAggregate(conditions map[string]interface
 
 	count := 0
 	for k := range tempMap {
-		u.fieldIndexer.removeIndex(k, u.table[k].GetItemValue())
+		u.fieldIndexer.removeIndex(k, u.table[k].GetItemValue(u.deepCp))
 		u.table[k].Delete()
 		u.emptyMap.Add(k)
 		count++

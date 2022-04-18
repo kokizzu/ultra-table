@@ -11,6 +11,10 @@ type IRow interface {
 	Unmarshal([]byte) error
 }
 
+type IDeepCp[T IRow] interface {
+	DeepCp() T
+}
+
 type tag struct {
 	offset    uintptr
 	fieldType FieldType

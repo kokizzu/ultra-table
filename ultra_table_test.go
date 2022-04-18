@@ -24,6 +24,9 @@ func (p *Person) Marshal() ([]byte, error) {
 func (p *Person) Unmarshal(data []byte) error {
 	return json.Unmarshal(data, p)
 }
+func (p *Person) DeepCp() *Person {
+	return &Person{}
+}
 
 type PersonWithNormal struct {
 	Name     string `json:"name,omitempty" idx:"normal"`
@@ -39,23 +42,28 @@ func (p *PersonWithNormal) Marshal() ([]byte, error) {
 func (p *PersonWithNormal) Unmarshal(data []byte) error {
 	return json.Unmarshal(data, p)
 }
+func (person *PersonWithNormal) DeepCp() *PersonWithNormal {
+	return &PersonWithNormal{}
+}
 
 func TestQuery(t *testing.T) {
 	Convey("query", t, func() {
 		Convey("get", func() {
-			table, err := NewWithInitializeData([]*Person{{
-				Name:     "jacky",
-				Phone:    "+8613575468007",
-				Age:      31,
-				BirthDay: 19901111,
-				Gender:   0,
-			}, {
-				Name:     "rose",
-				Phone:    "+8613575468008",
-				Age:      31,
-				BirthDay: 19901016,
-				Gender:   1,
-			}})
+			table, err := NewWithInitializeData[*Person]([]*Person{
+				{
+					Name:     "jacky",
+					Phone:    "+8613575468007",
+					Age:      31,
+					BirthDay: 19901111,
+					Gender:   0,
+				}, {
+					Name:     "rose",
+					Phone:    "+8613575468008",
+					Age:      31,
+					BirthDay: 19901016,
+					Gender:   1,
+				},
+			}, &Person{})
 			So(err, ShouldBeNil)
 			results := table.Get(func(person *Person) bool {
 				return person.Name == "jacky"
@@ -71,7 +79,7 @@ func TestQuery(t *testing.T) {
 			So(table.Len(), ShouldEqual, 0)
 		})
 		Convey("get with index", func() {
-			table, err := NewWithInitializeData([]*pb.Person{{
+			table, err := NewWithInitializeData[*pb.Person]([]*pb.Person{{
 				Name:     "jacky",
 				Phone:    "+8613575468007",
 				Age:      31,
@@ -83,7 +91,7 @@ func TestQuery(t *testing.T) {
 				Age:      31,
 				BirthDay: 19901016,
 				Gender:   pb.Gender_women,
-			}})
+			}}, &pb.Person{})
 			So(err, ShouldBeNil)
 
 			results, err := table.GetWithIdx("Age", int32(31))
@@ -103,7 +111,7 @@ func TestQuery(t *testing.T) {
 			So(len(results), ShouldEqual, 0)
 		})
 		Convey("get with intersection", func() {
-			table, err := NewWithInitializeData([]*pb.Person{{
+			table, err := NewWithInitializeData[*pb.Person]([]*pb.Person{{
 				Name:     "jacky",
 				Phone:    "+8613575468007",
 				Age:      31,
@@ -133,7 +141,7 @@ func TestQuery(t *testing.T) {
 				Age:      30,
 				BirthDay: 19910608,
 				Gender:   pb.Gender_women,
-			}})
+			}}, &pb.Person{})
 			So(err, ShouldBeNil)
 			results, err := table.GetWithIdxIntersection(map[string]interface{}{
 				"Age":  int32(31),
@@ -162,7 +170,7 @@ func TestQuery(t *testing.T) {
 			So(len(results), ShouldEqual, 1)
 		})
 		Convey("get with aggregate", func() {
-			table, err := NewWithInitializeData([]*pb.Person{{
+			table, err := NewWithInitializeData[*pb.Person]([]*pb.Person{{
 				Name:     "jacky",
 				Phone:    "+8613575468007",
 				Age:      31,
@@ -192,7 +200,7 @@ func TestQuery(t *testing.T) {
 				Age:      30,
 				BirthDay: 19910608,
 				Gender:   pb.Gender_women,
-			}})
+			}}, &pb.Person{})
 			So(err, ShouldBeNil)
 			results, err := table.GetWithIdxAggregate(map[string]interface{}{
 				"Age":  int32(31),
@@ -233,7 +241,7 @@ func TestQuery(t *testing.T) {
 func TestDelete(t *testing.T) {
 	Convey("delete", t, func() {
 		Convey("clear", func() {
-			table, err := NewWithInitializeData([]*pb.Person{{
+			table, err := NewWithInitializeData[*pb.Person]([]*pb.Person{{
 				Name:     "jacky",
 				Phone:    "+8613575468007",
 				Age:      31,
@@ -263,7 +271,7 @@ func TestDelete(t *testing.T) {
 				Age:      30,
 				BirthDay: 19910608,
 				Gender:   pb.Gender_women,
-			}})
+			}}, &pb.Person{})
 			So(err, ShouldBeNil)
 			So(table.Len(), ShouldEqual, 5)
 			So(table.Cap(), ShouldEqual, 5)
@@ -290,7 +298,7 @@ func TestDelete(t *testing.T) {
 
 		})
 		Convey("remove with index", func() {
-			table, err := NewWithInitializeData([]*pb.Person{{
+			table, err := NewWithInitializeData[*pb.Person]([]*pb.Person{{
 				Name:     "jacky",
 				Phone:    "+8613575468007",
 				Age:      31,
@@ -320,7 +328,7 @@ func TestDelete(t *testing.T) {
 				Age:      30,
 				BirthDay: 19910608,
 				Gender:   pb.Gender_women,
-			}})
+			}}, &pb.Person{})
 			So(err, ShouldBeNil)
 
 			count := table.Remove(func(person *pb.Person) bool {
@@ -350,7 +358,7 @@ func TestDelete(t *testing.T) {
 			So(table.Cap(), ShouldEqual, 5)
 		})
 		Convey("remove with index intersection", func() {
-			table, err := NewWithInitializeData([]*pb.Person{{
+			table, err := NewWithInitializeData[*pb.Person]([]*pb.Person{{
 				Name:     "jacky",
 				Phone:    "+8613575468007",
 				Age:      31,
@@ -380,7 +388,7 @@ func TestDelete(t *testing.T) {
 				Age:      30,
 				BirthDay: 19910608,
 				Gender:   pb.Gender_women,
-			}})
+			}}, &pb.Person{})
 			So(err, ShouldBeNil)
 
 			count := table.RemoveWithIdxIntersection(map[string]interface{}{
@@ -410,7 +418,7 @@ func TestDelete(t *testing.T) {
 		})
 
 		Convey("remove with index aggregate", func() {
-			table, err := NewWithInitializeData([]*pb.Person{{
+			table, err := NewWithInitializeData[*pb.Person]([]*pb.Person{{
 				Name:     "jacky",
 				Phone:    "+8613575468007",
 				Age:      31,
@@ -440,7 +448,7 @@ func TestDelete(t *testing.T) {
 				Age:      30,
 				BirthDay: 19910608,
 				Gender:   pb.Gender_women,
-			}})
+			}}, &pb.Person{})
 			So(err, ShouldBeNil)
 
 			count := table.RemoveWithIdxAggregate(map[string]interface{}{
@@ -479,7 +487,7 @@ func TestDelete(t *testing.T) {
 func Test_Update(t *testing.T) {
 	Convey("Update", t, func() {
 		Convey("UpdateWithUniqueIdx", func() {
-			table, err := NewWithInitializeData([]*pb.Person{{
+			table, err := NewWithInitializeData[*pb.Person]([]*pb.Person{{
 				Name:     "jacky",
 				Phone:    "+8613575468007",
 				Age:      31,
@@ -509,7 +517,7 @@ func Test_Update(t *testing.T) {
 				Age:      30,
 				BirthDay: 19910608,
 				Gender:   pb.Gender_women,
-			}})
+			}}, &pb.Person{})
 			So(err, ShouldBeNil)
 
 			err = table.UpdateWithUniqueIdx("Name", "jacky", &pb.Person{
@@ -569,7 +577,7 @@ func Test_Update(t *testing.T) {
 		})
 
 		Convey("UpdateWithNormalIdx", func() {
-			table, err := NewWithInitializeData([]*pb.Person{{
+			table, err := NewWithInitializeData[*pb.Person]([]*pb.Person{{
 				Name:     "jacky",
 				Phone:    "+8613575468007",
 				Age:      31,
@@ -599,7 +607,7 @@ func Test_Update(t *testing.T) {
 				Age:      30,
 				BirthDay: 19910608,
 				Gender:   pb.Gender_women,
-			}})
+			}}, &pb.Person{})
 			So(err, ShouldBeNil)
 
 			count, err := table.UpdateWithNormalIdx("Name", "jacky", &pb.Person{
@@ -615,7 +623,7 @@ func Test_Update(t *testing.T) {
 			So(table.Len(), ShouldEqual, 5)
 			So(table.Cap(), ShouldEqual, 5)
 
-			tableWithNormal, err := NewWithInitializeData([]*PersonWithNormal{{
+			tableWithNormal, err := NewWithInitializeData[*PersonWithNormal]([]*PersonWithNormal{{
 				Name:     "jacky",
 				Phone:    "+8613575468007",
 				Age:      31,
@@ -645,7 +653,7 @@ func Test_Update(t *testing.T) {
 				Age:      30,
 				BirthDay: 19910608,
 				Gender:   1,
-			}})
+			}}, &PersonWithNormal{})
 			So(err, ShouldBeNil)
 
 			count, err = tableWithNormal.UpdateWithNormalIdx("Age", int32(31), &PersonWithNormal{
@@ -683,7 +691,7 @@ func Test_Update(t *testing.T) {
 		})
 
 		Convey("SaveWithUniqueIdx", func() {
-			table := New[*pb.Person]()
+			table := New[*pb.Person](&pb.Person{})
 			err := table.SaveWithUniqueIdx("Phone", "+8613575468007", &pb.Person{
 				Name:     "jacky",
 				Phone:    "+8613575468007",
@@ -740,7 +748,7 @@ func Test_Update(t *testing.T) {
 			})
 			So(err, ShouldNotBeNil)
 
-			table = New[*pb.Person]()
+			table = New[*pb.Person](&pb.Person{})
 
 			//if first init add, dose not check unique idx
 			err = table.SaveWithUniqueIdx("Name", "rose", &pb.Person{
@@ -755,7 +763,7 @@ func Test_Update(t *testing.T) {
 		})
 
 		Convey("SaveWithNormalIdxIntersection", func() {
-			table := New[*pb.Person]()
+			table := New[*pb.Person](&pb.Person{})
 
 			count, err := table.SaveWithNormalIdxIntersection(map[string]interface{}{}, &pb.Person{
 				Name:     "jacky",
@@ -777,7 +785,7 @@ func Test_Update(t *testing.T) {
 			So(err, ShouldNotBeNil)
 			So(count, ShouldEqual, 0)
 
-			tableWithNormal := New[*PersonWithNormal]()
+			tableWithNormal := New[*PersonWithNormal](&PersonWithNormal{})
 
 			count, err = tableWithNormal.SaveWithNormalIdxIntersection(map[string]interface{}{}, &PersonWithNormal{
 				Name:     "jacky",
@@ -863,7 +871,7 @@ func Test_Update(t *testing.T) {
 		})
 
 		Convey("SaveWithNormalIdxAggregate", func() {
-			table := New[*pb.Person]()
+			table := New[*pb.Person](&pb.Person{})
 
 			count, err := table.SaveWithNormalIdxAggregate(map[string]interface{}{}, &pb.Person{
 				Name:     "jacky",
@@ -885,7 +893,7 @@ func Test_Update(t *testing.T) {
 			So(err, ShouldNotBeNil)
 			So(count, ShouldEqual, 0)
 
-			tableWithNormal := New[*PersonWithNormal]()
+			tableWithNormal := New[*PersonWithNormal](&PersonWithNormal{})
 
 			count, err = tableWithNormal.SaveWithNormalIdxAggregate(map[string]interface{}{}, &PersonWithNormal{
 				Name:     "jacky",
@@ -979,7 +987,7 @@ func Test_Concurrent(t *testing.T) {
 			len := 10
 			waitGroup.Add(len * 3)
 
-			ultraTable := New[*PersonWithNormal]()
+			ultraTable := New[*PersonWithNormal](&PersonWithNormal{})
 			for i := 0; i < len; i++ {
 				go func(j int) {
 					ultraTable.Add(&PersonWithNormal{
@@ -1020,7 +1028,7 @@ func Test_Concurrent(t *testing.T) {
 			len := 100
 			waitGroup.Add(len * 2)
 
-			ultraTable := New[*PersonWithNormal]()
+			ultraTable := New[*PersonWithNormal](&PersonWithNormal{})
 			for i := 0; i < len; i++ {
 				go func(i int) {
 					ultraTable.Add(&PersonWithNormal{
@@ -1048,7 +1056,7 @@ func Test_Concurrent(t *testing.T) {
 
 func Test_SimulationWorkFlow(t *testing.T) {
 	Convey("case-1", t, func() {
-		table := New[*pb.Person]()
+		table := New[*pb.Person](&pb.Person{})
 
 		for i := 1; i <= 100; i++ {
 			err := table.Add(&pb.Person{
@@ -1091,5 +1099,32 @@ func Test_SimulationWorkFlow(t *testing.T) {
 		})
 		So(count, ShouldEqual, 20)
 		So(table.Len(), ShouldEqual, 0)
+	})
+	Convey("case-2", t, func() {
+		table := New[*pb.Person](&pb.Person{})
+		err := table.Add(&pb.Person{
+			Name:     "jacky",
+			Phone:    "+8613575468007",
+			Age:      31,
+			BirthDay: 19901111,
+			Gender:   0,
+		})
+		So(err, ShouldBeNil)
+
+		resuts, err := table.GetWithIdx("Phone", "+8613575468007")
+		So(err, ShouldBeNil)
+		So(resuts[0].Age, ShouldEqual, 31)
+		So(resuts[0].BirthDay, ShouldEqual, 19901111)
+
+		resuts[0].Age = 32
+		resuts[0].BirthDay = 19891111
+		err = table.UpdateWithUniqueIdx("Phone", "+8613575468007", resuts[0])
+		So(err, ShouldBeNil)
+
+		resuts, err = table.GetWithIdx("Phone", "+8613575468007")
+		So(err, ShouldBeNil)
+
+		So(resuts[0].Age, ShouldEqual, 32)
+		So(resuts[0].BirthDay, ShouldEqual, 19891111)
 	})
 }
