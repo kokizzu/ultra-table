@@ -11,7 +11,7 @@ import (
 
 func BenchmarkAddWithGoGo(b *testing.B) {
 	b.StopTimer()
-	ultraTable := ultra_table.New[*pb.Person]()
+	ultraTable := ultra_table.New[*pb.Person](new(pb.Person))
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -30,7 +30,7 @@ func BenchmarkAddWithGoGo(b *testing.B) {
 
 func BenchmarkAddWithEasyjson(b *testing.B) {
 	b.StopTimer()
-	ultraTable := ultra_table.New[*easyjson.Person]()
+	ultraTable := ultra_table.New[*easyjson.Person](new(easyjson.Person))
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -49,7 +49,7 @@ func BenchmarkAddWithEasyjson(b *testing.B) {
 
 func BenchmarkGetWithUniqueIndexWithGoGo(b *testing.B) {
 	b.StopTimer()
-	ultraTable := ultra_table.New[*pb.Person]()
+	ultraTable := ultra_table.New[*pb.Person](new(pb.Person))
 	for i := 0; i < 100000; i++ {
 		err := ultraTable.Add(&pb.Person{
 			Name:     "jacky",
@@ -76,7 +76,7 @@ func BenchmarkGetWithUniqueIndexWithGoGo(b *testing.B) {
 
 func BenchmarkGetWithUniqueIndexWithEasyjson(b *testing.B) {
 	b.StopTimer()
-	ultraTable := ultra_table.New[*easyjson.Person]()
+	ultraTable := ultra_table.New[*easyjson.Person](new(easyjson.Person))
 	for i := 0; i < 100000; i++ {
 		err := ultraTable.Add(&easyjson.Person{
 			Name:     "jacky",
@@ -102,7 +102,7 @@ func BenchmarkGetWithUniqueIndexWithEasyjson(b *testing.B) {
 }
 func BenchmarkGetWithNormalIndex(b *testing.B) {
 	b.StopTimer()
-	ultraTable := ultra_table.New[*pb.Person]()
+	ultraTable := ultra_table.New[*pb.Person](new(pb.Person))
 	for i := 0; i < 100000; i++ {
 		err := ultraTable.Add(&pb.Person{
 			Name:     "jacky",
@@ -129,7 +129,7 @@ func BenchmarkGetWithNormalIndex(b *testing.B) {
 
 func BenchmarkGetWithIdxIntersectionNotFound(b *testing.B) {
 	b.StopTimer()
-	ultraTable := ultra_table.New[*pb.Person]()
+	ultraTable := ultra_table.New[*pb.Person](new(pb.Person))
 	for i := 0; i < 100000; i++ {
 		err := ultraTable.Add(&pb.Person{
 			Name:     "jacky",
@@ -159,7 +159,7 @@ func BenchmarkGetWithIdxIntersectionNotFound(b *testing.B) {
 
 func BenchmarkGetWithIdxIntersection(b *testing.B) {
 	b.StopTimer()
-	ultraTable := ultra_table.New[*pb.Person]()
+	ultraTable := ultra_table.New[*pb.Person](new(pb.Person))
 	for i := 0; i < 100000; i++ {
 		err := ultraTable.Add(&pb.Person{
 			Name:     "jacky",
@@ -192,7 +192,7 @@ func BenchmarkGetWithIdxIntersection(b *testing.B) {
 
 func BenchmarkRemoveWithIndex(b *testing.B) {
 	b.StopTimer()
-	ultraTable := ultra_table.New[*pb.Person]()
+	ultraTable := ultra_table.New[*pb.Person](new(pb.Person))
 	for i := 0; i < 100000; i++ {
 		err := ultraTable.Add(&pb.Person{
 			Name:     "jacky",
@@ -216,7 +216,7 @@ func BenchmarkRemoveWithIndex(b *testing.B) {
 
 func BenchmarkUpdateWithIndex(b *testing.B) {
 	b.StopTimer()
-	ultraTable := ultra_table.New[*pb.Person]()
+	ultraTable := ultra_table.New[*pb.Person](new(pb.Person))
 	for i := 0; i < 100000; i++ {
 		err := ultraTable.Add(&pb.Person{
 			Name:     "jacky",
@@ -246,7 +246,7 @@ func BenchmarkUpdateWithIndex(b *testing.B) {
 
 func BenchmarkAddAndRemove(b *testing.B) {
 	b.StopTimer()
-	ultraTable := ultra_table.New[*pb.Person]()
+	ultraTable := ultra_table.New[*pb.Person](new(pb.Person))
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
