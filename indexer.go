@@ -104,6 +104,15 @@ func (f *fieldIndexer) buildIndex(item interface{}, idx uint32) error {
 	return nil
 }
 
+func (f *fieldIndexer) isExistUnique() bool {
+	for _, v := range f.indexTags {
+		if v.CheckIsUnique() {
+			return true
+		}
+	}
+	return false
+}
+
 func (f *fieldIndexer) removeIndex(idx uint32, item interface{}) {
 	for name, tag := range f.indexTags {
 

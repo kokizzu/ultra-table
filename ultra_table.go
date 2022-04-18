@@ -1,6 +1,7 @@
 package ultra_table
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -125,19 +126,30 @@ func (u *UltraTable[T]) GetWithIdx(idxKey string, vKey interface{}) ([]T, error)
 	return u.getWithIdx(idxKey, vKey)
 }
 
-func (u *UltraTable[T]) UpdateWithIdx(idxKey string, vKey interface{}, t T) int {
+//UpdateWithIdx
+//update record with unique idx
+func (u *UltraTable[T]) UpdateWithUniqueIdx(idxKey string, vKey interface{}, t T) error {
 	u.Lock()
 	defer u.Unlock()
 
-	return u.updateWithIdx(idxKey, vKey, t)
+	return u.updateWithUniqueIdx(idxKey, vKey, t)
+}
+
+//UpdateWithNormalIdx
+//update record with normal idx
+func (u *UltraTable[T]) UpdateWithNormalIdx(idxKey string, vKey interface{}, t T) (uint32, error) {
+	u.Lock()
+	defer u.Unlock()
+
+	return u.updateWithNormalIdx(idxKey, vKey, t)
 }
 
 //SaveWithIdx update or insert
-func (u *UltraTable[T]) SaveWithIdx(idxKey string, vKey interface{}, t T) int {
+func (u *UltraTable[T]) SaveWithUniqueIdx(idxKey string, vKey interface{}, t T) error {
 	u.Lock()
 	defer u.Unlock()
 
-	return u.saveWithIdx(idxKey, vKey, t)
+	return u.saveWithUniqueIdx(idxKey, vKey, t)
 }
 
 func (u *UltraTable[T]) GetWithIdxAggregateCount(conditions map[string]interface{}) uint32 {
@@ -166,16 +178,16 @@ func (u *UltraTable[T]) RemoveWithIdxAggregate(conditions map[string]interface{}
 	return u.removeWithIdxAggregate(conditions)
 }
 
-func (u *UltraTable[T]) SaveWithIdxAggregate(conditions map[string]interface{}, t T) int {
+func (u *UltraTable[T]) SaveWithNormalIdxAggregate(conditions map[string]interface{}, t T) (uint32, error) {
 	u.Lock()
 	defer u.Unlock()
-	return u.saveWithIdxAggregate(conditions, t)
+	return u.saveWithNormalIdxAggregate(conditions, t)
 }
 
-func (u *UltraTable[T]) SaveWithIdxIntersection(conditions map[string]interface{}, t T) int {
+func (u *UltraTable[T]) SaveWithNormalIdxIntersection(conditions map[string]interface{}, t T) (uint32, error) {
 	u.Lock()
 	defer u.Unlock()
-	return u.saveWithIdxIntersection(conditions, t)
+	return u.saveWithNormalIdxIntersection(conditions, t)
 }
 
 func (u *UltraTable[T]) add(t T) error {
@@ -497,28 +509,60 @@ func (u *UltraTable[T]) has(f iterator[T]) bool {
 	return false
 }
 
-func (u *UltraTable[T]) updateWithIdx(idxKey string, vKey interface{}, t T) int {
-
-	count := u.removeWithIdx(idxKey, vKey)
-
-	if count > 0 {
-		for i := 0; i < count; i++ {
-			u.add(t)
-		}
+func (u *UltraTable[T]) updateWithUniqueIdx(idxKey string, vKey interface{}, t T) error {
+	tag, err := u.fieldIndexer.getIndexTag(idxKey)
+	if err != nil {
+		return err
 	}
-	return count
+	if !tag.CheckIsUnique() {
+		return fmt.Errorf("idx key must unique")
+	}
+
+	index, ok := u.fieldIndexer.uniqueIndexItems[idxKey]
+	if !ok {
+		return RecordNotFound
+	}
+	idx, ok := index[vKey]
+	if !ok {
+		return RecordNotFound
+	}
+	oldItem := u.table[idx].GetItemValue()
+
+	if u.removeWithIdx(idxKey, vKey) == 1 {
+		if err := u.add(t); err != nil {
+			u.add(oldItem)
+			return err
+		}
+		return nil
+	} else {
+		return fmt.Errorf("not found item")
+	}
 }
 
-func (u *UltraTable[T]) saveWithIdx(idxKey string, vKey interface{}, t T) int {
-	if u.hasWithIdx(idxKey, vKey) {
-		return u.updateWithIdx(idxKey, vKey, t)
+func (u *UltraTable[T]) updateWithNormalIdx(idxKey string, vKey interface{}, t T) (uint32, error) {
+	if u.getWithIdxCount(idxKey, vKey) <= 0 {
+		return 0, nil
 	}
-	err := u.add(t)
+
+	if u.fieldIndexer.isExistUnique() {
+		return 0, fmt.Errorf("idx must not exist unique")
+	}
+	count := u.removeWithIdx(idxKey, vKey)
+	for i := 0; i < count; i++ {
+		u.add(t)
+	}
+	return uint32(count), nil
+}
+
+func (u *UltraTable[T]) saveWithUniqueIdx(idxKey string, vKey interface{}, t T) error {
+	err := u.updateWithUniqueIdx(idxKey, vKey, t)
 	if err != nil {
-		return 0
-	} else {
-		return 1
+		if err == RecordNotFound {
+			return u.add(t)
+		}
+		return err
 	}
+	return err
 }
 
 func (u *UltraTable[T]) removeWithIdxIntersection(conditions map[string]interface{}) int {
@@ -605,36 +649,38 @@ func (u *UltraTable[T]) removeWithIdxAggregate(conditions map[string]interface{}
 	return count
 }
 
-func (u *UltraTable[T]) saveWithIdxIntersection(conditions map[string]interface{}, t T) int {
-	if u.getWithIdxIntersectionCount(conditions) == 0 {
+func (u *UltraTable[T]) saveWithNormalIdxIntersection(conditions map[string]interface{}, t T) (uint32, error) {
+	if u.fieldIndexer.isExistUnique() {
+		return 0, fmt.Errorf("idx must not exist unique")
+	}
+
+	if u.getWithIdxIntersectionCount(conditions) <= 0 {
 		if err := u.add(t); err != nil {
-			return 0
+			return 0, err
 		}
-		return 1
+		return 1, nil
 	}
 	count := u.removeWithIdxIntersection(conditions)
 	for i := 0; i < count; i++ {
-		err := u.add(t)
-		if err != nil {
-			//TODO
-		}
+		u.add(t)
 	}
-	return count
+	return uint32(count), nil
 }
 
-func (u *UltraTable[T]) saveWithIdxAggregate(conditions map[string]interface{}, t T) int {
-	if u.getWithIdxAggregateCount(conditions) == 0 {
+func (u *UltraTable[T]) saveWithNormalIdxAggregate(conditions map[string]interface{}, t T) (uint32, error) {
+	if u.fieldIndexer.isExistUnique() {
+		return 0, fmt.Errorf("idx must not exist unique")
+	}
+
+	if u.getWithIdxAggregateCount(conditions) <= 0 {
 		if err := u.add(t); err != nil {
-			return 0
+			return 0, err
 		}
-		return 1
+		return 1, nil
 	}
 	count := u.removeWithIdxAggregate(conditions)
 	for i := 0; i < count; i++ {
-		err := u.add(t)
-		if err != nil {
-			//TODO
-		}
+		u.add(t)
 	}
-	return count
+	return uint32(count), nil
 }
