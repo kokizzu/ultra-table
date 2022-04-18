@@ -10,7 +10,7 @@ import (
 
 func main() {
 	baseEasyjson() //serialization based easyjson
-	//basegogo()     //serialization based gogo protobuf
+	basegogo()     //serialization based gogo protobuf
 }
 
 func baseEasyjson() {
