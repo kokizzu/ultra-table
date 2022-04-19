@@ -356,6 +356,9 @@ func (u *UltraTableV2[T]) getWithIdxIntersection(conditions map[string]interface
 			result = append(result, u.table[k].GetItemValue(u.deepCp))
 		}
 	}
+	if len(result) == 0 {
+		return nil, RecordNotFound
+	}
 	return result, nil
 }
 
