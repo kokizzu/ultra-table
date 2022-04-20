@@ -6,10 +6,24 @@ import (
 	"unsafe"
 )
 
+type IRow interface {
+	Marshal() ([]byte, error)
+	Unmarshal([]byte) error
+}
+
+type IDeepCp[T IRow] interface {
+	DeepCp() T
+}
+
 type tag struct {
 	offset    uintptr
 	fieldType FieldType
 	indexType IndexType
+}
+
+type emptyInterface struct {
+	typ  *struct{}
+	word unsafe.Pointer
 }
 
 type FieldType string
@@ -37,26 +51,18 @@ const (
 type IndexType string
 
 const (
-	//UNIQUE IndexType = `unique`
+	UNIQUE IndexType = `unique`
 	NORMAL IndexType = `normal`
 )
 
 func getIndex(inputIndex string) (IndexType, error) {
 	switch IndexType(inputIndex) {
-	// case UNIQUE:
-	// 	return UNIQUE, nil
+	case UNIQUE:
+		return UNIQUE, nil
 	case NORMAL:
 		return NORMAL, nil
 	}
-	return ``, fmt.Errorf(`not found correct index`)
-}
-
-// func is_UNIQUE(idx string) bool {
-// 	return idx == string(UNIQUE)
-// }
-
-func isNORMAL(idx string) bool {
-	return idx == string(NORMAL)
+	return ``, fmt.Errorf(`index type not support`)
 }
 
 func (tag *tag) GetPointerVal(p unsafe.Pointer) interface{} {
@@ -98,6 +104,14 @@ func (tag *tag) GetPointerVal(p unsafe.Pointer) interface{} {
 		val = *(*rune)(p)
 	}
 	return val
+}
+
+func (tag *tag) CheckIsNormal() bool {
+	return tag.indexType == NORMAL
+}
+
+func (tag *tag) CheckIsUnique() bool {
+	return tag.indexType == UNIQUE
 }
 
 func GetTag(dest interface{}, offset uintptr, indexType IndexType) (*tag, error) {

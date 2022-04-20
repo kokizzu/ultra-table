@@ -9,15 +9,9 @@ import (
 )
 
 var (
-	RecordNotFound    = errors.New("record not found")
 	OnlySupportStruct = errors.New("only support struct")
-	ValueNotNil       = errors.New("value can not be nil")
 )
 
-type emptyInterface struct {
-	typ  *struct{}
-	word unsafe.Pointer
-}
 type IndexGroup struct {
 	indexItems map[string]map[interface{}]*BitMap
 	indexTags  map[string]*tag

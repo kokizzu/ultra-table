@@ -51,3 +51,7 @@ func (b *BitMap) Length() int {
 func (b *BitMap) Remove(num uint32) {
 	b.Bitmap.Remove(num)
 }
+
+func (b *BitMap) IsEmpty() bool {
+	return b.Bitmap.IsEmpty()
+}
