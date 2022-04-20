@@ -46,6 +46,24 @@ func (person *PersonWithNormal) DeepCp() *PersonWithNormal {
 	return &PersonWithNormal{}
 }
 
+type PersonWithUnique struct {
+	Name     string `json:"name,omitempty" idx:"unique"`
+	Phone    string `json:"phone,omitempty" idx:"unique"`
+	Age      int32  `json:"age,omitempty" idx:"normal"`
+	BirthDay int32  `json:"birthDay,omitempty"`
+	Gender   uint8  `json:"gender,omitempty"`
+}
+
+func (p *PersonWithUnique) Marshal() ([]byte, error) {
+	return json.Marshal(p)
+}
+func (p *PersonWithUnique) Unmarshal(data []byte) error {
+	return json.Unmarshal(data, p)
+}
+func (*PersonWithUnique) DeepCp() *PersonWithUnique {
+	return &PersonWithUnique{}
+}
+
 func TestQuery(t *testing.T) {
 	Convey("query", t, func() {
 		Convey("get", func() {
@@ -160,7 +178,7 @@ func TestQuery(t *testing.T) {
 				"Age":  int32(31),
 				"Name": "anthony",
 			})
-			So(err, ShouldBeNil)
+			So(err, ShouldNotBeNil)
 			So(len(results), ShouldEqual, 0)
 
 			results, err = table.GetWithIdxIntersection(map[string]interface{}{
@@ -1126,5 +1144,110 @@ func Test_SimulationWorkFlow(t *testing.T) {
 
 		So(resuts[0].Age, ShouldEqual, 32)
 		So(resuts[0].BirthDay, ShouldEqual, 19891111)
+	})
+	Convey("case-3", t, func() {
+		table := New[*PersonWithUnique](&PersonWithUnique{})
+		err := table.Add(&PersonWithUnique{
+			Name:     "jacky",
+			Phone:    "+8613575468007",
+			Age:      31,
+			BirthDay: 19901111,
+			Gender:   0,
+		})
+		So(err, ShouldBeNil)
+		err = table.Add(&PersonWithUnique{
+			Name:     "rose",
+			Phone:    "+8613575468007",
+			Age:      31,
+			BirthDay: 19901111,
+			Gender:   1,
+		})
+		So(err, ShouldNotBeNil)
+		So(table.Len(), ShouldEqual, 1)
+
+		err = table.Add(&PersonWithUnique{
+			Name:     "rose",
+			Phone:    "+8613575468008",
+			Age:      30,
+			BirthDay: 19911111,
+			Gender:   1,
+		})
+		So(err, ShouldBeNil)
+		So(table.Len(), ShouldEqual, 2)
+
+		results, err := table.GetWithIdx("Phone", "+8613575468007")
+		So(err, ShouldBeNil)
+		So(results[0].Name, ShouldEqual, "jacky")
+
+		count := table.GetWithIdxAggregateCount(map[string]interface{}{
+			"Name": "jacky",
+			"Age":  int32(30),
+		})
+		So(count, ShouldEqual, 2)
+
+		count = table.GetWithIdxIntersectionCount(map[string]interface{}{
+			"Name": "jacky",
+			"Age":  int32(30),
+		})
+		So(count, ShouldEqual, 0)
+
+		count = table.GetWithIdxIntersectionCount(map[string]interface{}{
+			"Name":  "jacky",
+			"Phone": "+8613575468007",
+		})
+		So(count, ShouldEqual, 1)
+		count = table.GetWithIdxIntersectionCount(map[string]interface{}{
+			"Name":  "jacky",
+			"Phone": "+8613575468008",
+		})
+		So(count, ShouldEqual, 0)
+
+		err = table.UpdateWithUniqueIdx("Name", "anthony", &PersonWithUnique{
+			Name:     "anthony",
+			Phone:    "+8613575468009",
+			Age:      30,
+			BirthDay: 19911111,
+			Gender:   1,
+		})
+		So(err, ShouldNotBeNil)
+
+		err = table.UpdateWithUniqueIdx("Name", "jacky", &PersonWithUnique{
+			Name:     "jacky",
+			Phone:    "+8613575468008",
+			Age:      30,
+			BirthDay: 19911111,
+			Gender:   1,
+		})
+		So(err, ShouldNotBeNil)
+
+		count, err = table.UpdateWithNormalIdx("Age", int32(31), &PersonWithUnique{
+			Name:     "jacky",
+			Phone:    "+8613575468008",
+			Age:      30,
+			BirthDay: 19911111,
+			Gender:   1,
+		})
+		So(err, ShouldNotBeNil)
+		So(count, ShouldEqual, 0)
+
+		err = table.SaveWithUniqueIdx("Name", "anthony", &PersonWithUnique{
+			Name:     "anthony",
+			Phone:    "+8613575468008",
+			Age:      30,
+			BirthDay: 19911111,
+			Gender:   1,
+		})
+		So(err, ShouldNotBeNil)
+		So(table.Len(), ShouldEqual, 2)
+
+		err = table.SaveWithUniqueIdx("Name", "anthony", &PersonWithUnique{
+			Name:     "anthony",
+			Phone:    "+8613575468009",
+			Age:      30,
+			BirthDay: 19911111,
+			Gender:   1,
+		})
+		So(err, ShouldBeNil)
+		So(table.Len(), ShouldEqual, 3)
 	})
 }
