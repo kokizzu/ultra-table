@@ -6,6 +6,7 @@ import (
 
 	ultra_table "github.com/longbridgeapp/ultra-table"
 	"github.com/longbridgeapp/ultra-table/test_data/easyjson"
+	"github.com/longbridgeapp/ultra-table/test_data/json"
 	"github.com/longbridgeapp/ultra-table/test_data/pb"
 )
 
@@ -35,6 +36,25 @@ func BenchmarkAddWithEasyjson(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		err := ultraTable.Add(&easyjson.Person{
+			Name:     "jacky",
+			Phone:    fmt.Sprintf("+861357546%d", i),
+			Age:      int32(i),
+			BirthDay: 19901111,
+			Gender:   0,
+		})
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkAddWithjson(b *testing.B) {
+	b.StopTimer()
+	ultraTable := ultra_table.New[*json.Person](new(json.Person))
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		err := ultraTable.Add(&json.Person{
 			Name:     "jacky",
 			Phone:    fmt.Sprintf("+861357546%d", i),
 			Age:      int32(i),

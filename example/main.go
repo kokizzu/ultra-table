@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	ultra_table "github.com/longbridgeapp/ultra-table"
@@ -50,6 +51,24 @@ func baseEasyjson() {
 		"Name": "rose",
 	})
 	log.Println("easyjson", err)
+
+	m := map[string]string{
+		"HKD": "0",
+		"USD": "10",
+		"SGD": "0",
+	}
+	clear(m)
+	fmt.Println("after", m)
+
+}
+
+func clear(cashBooks map[string]string) {
+	fmt.Println("before", cashBooks)
+	for currency, detail := range cashBooks {
+		if detail == "0" {
+			delete(cashBooks, currency)
+		}
+	}
 }
 
 func basegogo() {
