@@ -64,12 +64,12 @@ func (f *fieldIndexer) buildIndex(item interface{}, idx uint32) error {
 	if f.IndexTagLen() == 0 {
 		return nil
 	}
-	ptr0 := uintptr((*emptyInterface)(unsafe.Pointer(&item)).word)
+	itemPointer := (*emptyInterface)(unsafe.Pointer(&item)).word
 	for name, tag := range f.indexTags {
 		//pre check unique index
 		if tag.CheckIsUnique() {
 			if m, ok := f.uniqueIndexItems[name]; ok {
-				val := tag.GetPointerVal(unsafe.Pointer(ptr0 + tag.offset))
+				val := tag.GetPointerVal(unsafe.Pointer(uintptr(itemPointer) + tag.offset))
 				if _, ok := m[val]; ok {
 					return UniqueIndex
 				}
@@ -78,7 +78,7 @@ func (f *fieldIndexer) buildIndex(item interface{}, idx uint32) error {
 	}
 
 	for name, tag := range f.indexTags {
-		val := tag.GetPointerVal(unsafe.Pointer(ptr0 + tag.offset))
+		val := tag.GetPointerVal(unsafe.Pointer(uintptr(itemPointer) + tag.offset))
 		if tag.CheckIsNormal() {
 			m, ok := f.normalIndexItems[name]
 			if !ok {
@@ -119,8 +119,7 @@ func (f *fieldIndexer) removeIndex(idx uint32, item interface{}) {
 		if tag.CheckIsUnique() {
 			m, ok := f.uniqueIndexItems[name]
 			if ok {
-				ptr0 := uintptr((*emptyInterface)(unsafe.Pointer(&item)).word)
-				val := tag.GetPointerVal(unsafe.Pointer(ptr0 + tag.offset))
+				val := tag.GetPointerVal(unsafe.Pointer(uintptr((*emptyInterface)(unsafe.Pointer(&item)).word) + tag.offset))
 				delete(m, val)
 			}
 		}
@@ -128,8 +127,7 @@ func (f *fieldIndexer) removeIndex(idx uint32, item interface{}) {
 		if tag.CheckIsNormal() {
 			m, ok := f.normalIndexItems[name]
 			if ok {
-				ptr0 := uintptr((*emptyInterface)(unsafe.Pointer(&item)).word)
-				val := tag.GetPointerVal(unsafe.Pointer(ptr0 + tag.offset))
+				val := tag.GetPointerVal(unsafe.Pointer(uintptr((*emptyInterface)(unsafe.Pointer(&item)).word) + tag.offset))
 				m[val].Remove(idx)
 				if m[val].IsEmpty() {
 					delete(m, val)
